@@ -1,0 +1,45 @@
+seed: 2026
+device: auto
+
+data:
+  dataset_root: Dataset
+  train_manifest: training_multisource.csv
+  val_manifest: validation_multisource.csv
+  image_size: 224
+  batch_size: 32
+  num_workers: 4
+  pin_memory: true
+  balanced_sampling: true
+  # Fine-tuning exposure: P(blur_2.0) = 0.80 * (3/6) * (3/6) = 0.20.
+  train_degradation_probability: 0.80
+  train_degradation_kind_weights:
+    jpeg: 1.0
+    blur: 3.0
+    scale: 1.0
+    noise: 1.0
+  train_blur_weights: [1.0, 2.0, 3.0]
+  max_train_samples: null
+  max_val_samples: null
+
+model:
+  name: convnext_tiny
+  pretrained: false
+  dropout: 0.10
+  drop_path: 0.10
+
+training:
+  epochs: 2
+  learning_rate: 0.00005
+  weight_decay: 0.05
+  warmup_epochs: 0
+  accumulation_steps: 1
+  gradient_clip: 1.0
+  max_batches_per_epoch: null
+  max_val_batches: null
+
+validation:
+  conditions: [clean, jpeg_30, blur_2.0, scale_0.25, noise_0.10]
+
+output:
+  directory: outputs/multisource_blur_finetune
+  tensorboard: true
