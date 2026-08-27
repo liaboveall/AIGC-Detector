@@ -67,9 +67,13 @@ scikit-learn, Pillow, PyYAML, tqdm, tensorboard, datasets, pyarrow.
 ### 1. Data preparation
 
 Place the datasets under `Dataset/` (see `Dataset/README_DATASET.md`), then build
-training manifests:
+the manifests. The seed manifests (`training_pool.csv`, `validation_pool.csv`,
+`wildfake_demo.csv`, the SID/CIFAKE pools, …) are all larger than 1 MB, so they are
+**not committed**; rebuild them deterministically (fixed seeds) from the extracted
+datasets:
 
 ```powershell
+python Dataset/audit/build_dataset_manifests.py    # seed manifests + dedup/audit tables
 python scripts/build_training_manifests.py          # SID-only manifests
 python scripts/build_multisource_manifests.py       # SID + GenImage manifests (deduplicated)
 ```
@@ -100,16 +104,31 @@ internal validation split only — never on WildFake.
 
 ### 4. Evaluate (16-condition robustness suite)
 
+Internal validation split (default manifest from the checkpoint config):
+
 ```powershell
 python evaluate.py --checkpoint outputs/multisource_blur_finetune/best.pt --suite full
 ```
 
-Per-image score export for threshold calibration and held-out error analysis:
+Full 16-condition evaluation of the final model on the held-out WildFake demo subset
+— this produces `reports/wildfake_analysis_blur_finetune/` inputs:
+
+```powershell
+python evaluate.py --checkpoint outputs/multisource_blur_finetune/best.pt --manifest wildfake_demo.csv --suite full --output outputs/multisource_blur_finetune/wildfake_demo_full.json --predictions-output outputs/multisource_blur_finetune/wildfake_demo_full_predictions.csv
+```
+
+Per-image score export for threshold calibration (internal validation, five
+degradation conditions — WildFake is never used here):
 
 ```powershell
 python evaluate.py --checkpoint outputs/multisource/best.pt --manifest validation_multisource.csv --conditions clean,jpeg_30,blur_2.0,scale_0.25,noise_0.10 --output outputs/multisource/calibration_validation_5_conditions.json --predictions-output outputs/multisource/calibration_validation_5_conditions_predictions.csv
-python evaluate.py --checkpoint outputs/multisource/best.pt --manifest wildfake_demo.csv --conditions clean,blur_2.0 --output outputs/multisource/wildfake_error_conditions.json --predictions-output outputs/multisource/wildfake_error_conditions_predictions.csv
-python scripts/analyze_wildfake.py --calibration-predictions outputs/multisource/calibration_validation_5_conditions_predictions.csv --target-predictions outputs/multisource/wildfake_error_conditions_predictions.csv --full-evaluation outputs/multisource/wildfake_demo_full.json --output-dir reports/wildfake_analysis
+```
+
+Threshold calibration + final held-out analysis (writes
+`reports/wildfake_analysis_blur_finetune/`):
+
+```powershell
+python scripts/analyze_wildfake.py --calibration-predictions outputs/multisource/calibration_validation_5_conditions_predictions.csv --target-predictions outputs/multisource_blur_finetune/wildfake_demo_full_predictions.csv --full-evaluation outputs/multisource_blur_finetune/wildfake_demo_full.json --output-dir reports/wildfake_analysis_blur_finetune
 ```
 
 The threshold is selected only on `validation_multisource.csv`; WildFake remains held
@@ -129,7 +148,7 @@ scanned recursively and unreadable images receive the neutral fallback score `0.
 The final checkpoint (`multisource_blur_finetune/best.pt`) will be distributed via a
 GitHub Release:
 
-> `https://github.com/<OWNER>/<REPO>/releases`  *(placeholder — to be replaced)*
+> `https://github.com/liaboveall/AIGC-Detector/releases`
 
 Each Release asset ships with its **SHA256 checksum**; verify with:
 
@@ -138,6 +157,12 @@ Get-FileHash best.pt -Algorithm SHA256
 ```
 
 and compare against the checksum published in the Release notes.
+
+## Demo video
+
+The 3-minute demo video will be uploaded with the Devpost submission; the shot list
+and narration script live in [`docs/DEMO_VIDEO_SCRIPT.md`](docs/DEMO_VIDEO_SCRIPT.md).
+*(Video link placeholder — to be filled after the Devpost upload.)*
 
 ## Limitations & future work
 
@@ -179,6 +204,11 @@ and compare against the checksum published in the Release notes.
   the final training mixture. The WildFake evaluation subset was used exclusively for
   demonstration evaluation — never for training, checkpoint selection, or threshold
   tuning.
+- **Dataset licensing:** all datasets are used for research purposes under the
+  licenses of their official releases: COCO val2017 images are distributed under the
+  Flickr Terms with individual images retaining their original licenses (predominantly
+  CC-BY 4.0); GenImage, SID_Set, and CIFAKE are used under the terms published on
+  their respective official release pages.
 - **Evaluation integrity:** threshold 0.209 was frozen on the internal validation
   split before any WildFake scoring of the final model.
 
@@ -208,5 +238,6 @@ test.py         unit/pipeline tests
 predict.py      submission-format inference
 docs/           reviewer-facing deliverables (robustness summary, error analysis, …)
 reports/        machine-generated analysis artifacts
-Dataset/        datasets (not committed; see Dataset/README_DATASET.md)
+Dataset/        dataset tree; image bodies and large manifests are not committed,
+                only Dataset/README_DATASET.md and the audit rebuild script are tracked
 ```

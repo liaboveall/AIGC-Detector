@@ -24,10 +24,11 @@ TikTok TechJam Track 5 asks for detection that survives the real world: social-m
 pipelines recompress, resize, and filter images, and detectors tuned on clean lab data
 collapse under those transformations. We attacked the problem from three angles:
 
-1. **Training for the transformation space.** Our augmentation engine applies the
-   same six transformation families (JPEG, blur, downscale, noise, brightness, crop)
-   used by the evaluation protocol, so the model learns forensic cues that persist
-   through them.
+1. **Training for the transformation space.** Training applies explicit degradation
+   augmentation for four core families — JPEG, blur, downscale, and noise — plus
+   generic color jitter and random cropping, so the model learns forensic cues that
+   persist through real-world pipelines. Brightness shift and center crop appear only
+   in the evaluation protocol.
 2. **Training for generator diversity.** We mixed SID_Set with a multi-generator
    GenImage subset (exact-hash deduplicated), because a single-source model
    catastrophically failed cross-source in our first iteration (WildFake clean AUC ~0.646).
@@ -68,9 +69,11 @@ degraded AUC`) instead of clean accuracy.
   provided by the organizers; used **only** for demonstration evaluation. It never
   touched training, checkpoint selection, or threshold calibration.
 
-Licensing note: all datasets are publicly released research datasets used under their
-respective research-purpose licenses. `[Team to verify and list exact license terms
-before publishing if Devpost requires it.]`
+Licensing note: all datasets are publicly released research datasets used for
+research purposes under their official release terms — COCO val2017 images follow
+the Flickr Terms (individual images retain their original licenses, predominantly
+CC-BY 4.0); GenImage, SID_Set, and CIFAKE are used under the licenses published on
+their respective official release pages.
 
 ## Results (WildFake held-out, ROC AUC)
 

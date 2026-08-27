@@ -24,10 +24,12 @@ crop) one by one as they are named.
 
 **Narration (~30s):**
 > "ConvNeXt-Tiny — 27.8 million parameters, far under the 2-billion cap — trained on a
-> multi-source mixture of real and synthetic images, with the same six transformation
-> families applied during training that the organizers use for evaluation. Our first
-> single-source model collapsed cross-source, at 0.65 AUC; multi-source training fixed
-> that, and a blur-focused fine-tune repaired our weakest condition."
+> multi-source mixture of real and synthetic images. During training we explicitly
+> augment for four core degradations — JPEG, blur, downscale, noise — plus generic
+> color jitter and random cropping; brightness shift and center crop appear only in
+> the evaluation protocol. Our first single-source model collapsed cross-source, at
+> 0.65 AUC; multi-source training fixed that, and a blur-focused fine-tune repaired
+> our weakest condition."
 
 **Notes:** flash the numbers: 0.646 → multi-source → blur fine-tune. Keep it visual,
 not a wall of text.

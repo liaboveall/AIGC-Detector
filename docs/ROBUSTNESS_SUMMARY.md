@@ -68,6 +68,45 @@ synthetic images = **13,841 images per condition** (held out from training and t
 | Robust score (0.8 × mean + 0.2 × worst) | **0.9047** |
 | Previous multisource model robust score | 0.8972 |
 
+## Iteration comparison: SID-only → multisource → blur fine-tune
+
+Three checkpoints were evaluated on the same held-out WildFake demo subset under the
+same protocol (no WildFake feedback ever entered training or threshold selection):
+
+| Metric (WildFake held-out) | SID-only baseline | Multisource | Blur fine-tune (final) |
+|---|---:|---:|---:|
+| Clean AUC | 0.6463 | 0.9609 | **0.9636** |
+| `blur_2.0` AUC | — | 0.7834 | **0.8151** |
+| `noise_0.10` AUC | — | 0.8780 | 0.8576 |
+| Mean degraded AUC | — | 0.9256 | **0.9271** |
+| Robust score | — | 0.8972 | **0.9047** |
+
+The SID-only baseline was evaluated on only four conditions (clean, JPEG 50, blur 1.0,
+scale 0.5), so no degraded aggregate is reported for it; its cross-source clean AUC of
+0.6463 is the diagnostic number that motivated multi-source training. Sources:
+[`../reports/main_baseline_analysis.md`](../reports/main_baseline_analysis.md),
+[`../reports/wildfake_analysis/`](../reports/wildfake_analysis/),
+[`../reports/wildfake_analysis_blur_finetune/`](../reports/wildfake_analysis_blur_finetune/).
+
+### Checkpoint selection criterion
+
+Checkpoints are always selected with the robustness-aware objective
+`0.8 × mean degraded AUC + 0.2 × worst degraded AUC`, computed **only on the internal
+validation split** (never on WildFake). The blur fine-tune stage won selection despite
+a small noise regression because the weighted criterion plus the worst-condition term
+favor lifting `blur_2.0` — the true deployment bottleneck.
+
+### Assumptions
+
+1. The WildFake demo subset is a reference benchmark only: never used for training,
+   checkpoint selection, or threshold calibration.
+2. Degradations are applied exactly per the official protocol parameters (JPEG quality,
+   Gaussian blur σ, downscale factor, Gaussian noise σ, brightness shift, center-crop
+   ratio), reproduced locally by `evaluate.py`.
+3. One score per image; no ensembling or test-time augmentation.
+4. The frozen threshold 0.209 transfers across conditions; condition-specific
+   recalibration would invalidate the held-out guarantee.
+
 ## Interpretation
 
 - **JPEG compression does not hurt ranking — it slightly helps.** All four JPEG

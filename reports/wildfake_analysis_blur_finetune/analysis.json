@@ -1,7 +1,7 @@
 {
   "policy": {
-    "threshold_selected_on": "E:\\TikTok TechJam\\outputs\\multisource\\calibration_validation_5_conditions_predictions.csv",
-    "target_evaluated_on": "E:\\TikTok TechJam\\outputs\\multisource_blur_finetune\\wildfake_demo_full_predictions.csv",
+    "threshold_selected_on": "outputs/multisource/calibration_validation_5_conditions_predictions.csv",
+    "target_evaluated_on": "outputs/multisource_blur_finetune/wildfake_demo_full_predictions.csv",
     "wildfake_used_for_threshold_selection": false
   },
   "calibrated_threshold": 0.20900000000000002,

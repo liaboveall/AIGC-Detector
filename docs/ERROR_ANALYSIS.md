@@ -12,8 +12,10 @@ full per-case exports live in
 - Lowest ranking performance of all 16 conditions: **ROC AUC 0.8151**
   (clean: 0.9636; blur_1.0: 0.9469).
 - At threshold 0.209 the confusion shifts dramatically: clean FP/FN = 363/1322, but under
-  `blur_2.0` it becomes **1,899 FP / 1,504 FN** — the only condition where false positives
-  outnumber false negatives.
+  `blur_2.0` it becomes **1,899 FP / 1,504 FN** — the condition with the highest
+  false-positive count and the most severe FP/FN imbalance. (`color_-0.20` is the only
+  other condition where FPs outnumber FNs, 1,227/867; every other condition stays
+  FN-dominated.)
 - Cause: σ=2.0 Gaussian blur removes/distorts the high-frequency forensic cues the
   detector exploits. The blur fine-tune stage already improved this condition materially
   (WildFake `blur_2.0` AUC 0.7834 → 0.8151), and per-image inspection shows the fix works
@@ -42,16 +44,24 @@ transformation-specific causes:
 
 | Image | clean | blur_1.0 | jpeg_50 |
 |---|---:|---:|---:|
-| `.../Real/coco/coco2017/val2017/img159953.jpg` | 0.9995 | 1.0000 | 0.6982 |
-| `.../Real/coco/coco2017/val2017/img159274.jpg` | 0.9995 | — | 0.9937 |
-| `.../Real/coco/coco2017/val2017/img163818.jpg` | 0.9990 | — | — |
+| `Dataset/WildFake_demo/Images/Real/coco/coco2017/val2017/img159953.jpg` | 0.9995 | 1.0000 | 0.6982 |
+| `Dataset/WildFake_demo/Images/Real/coco/coco2017/val2017/img160993.jpg` | 0.9995 | — | — |
+| `Dataset/WildFake_demo/Images/Real/coco/coco2017/val2017/img163818.jpg` | 0.9990 | — | — |
+
+(`img159274.jpg` is the same kind of content-driven case, but its 0.9995 scores occur
+under the `noise_0.02/0.05/0.10` conditions; on clean it does not enter the top
+false-positive list.)
 
 **Recurring synthetic-image false negatives (DALL·E 3 Advanced), scores < 0.001 on clean:**
 
 | Image | clean | jpeg_30 | blur_2.0 |
 |---|---:|---:|---:|
-| `.../DALLE3/dalle3/2023110215025084768300d30fc34f/8148d0b6ad70932b3f6c4ec560e8c152.jpg` | 0.0005 | 0.0002 | 0.0006 |
-| `.../DALLE3/dalle3/202311011943129901ca391019566e/a4c1a07ecb0a5cd6f2ca29572120f434.jpg` | 0.0006 | 0.0002 | — |
+| `Dataset/WildFake_demo/Images/Diffusion_based/DALLE/Advanced/DALLE3/dalle3/2023110215025084768300d30fc34f/8148d0b6ad70932b3f6c4ec560e8c152.jpg` | 0.0005 | 0.0002 | 0.0006 |
+| `Dataset/WildFake_demo/Images/Diffusion_based/DALLE/Advanced/DALLE3/dalle3/202311011943129901ca391019566e/a4c1a07ecb0a5cd6f2ca29572120f434.jpg` | 0.0006 | 0.0002 | — |
+
+Full paths above point into the (uncommitted) dataset tree under
+`Dataset/WildFake_demo/`; every top case for all 16 conditions is exported in
+[`error_cases.csv`](../reports/wildfake_analysis_blur_finetune/error_cases.csv).
 
 These are **semantic failure modes** — the model mistakes certain photographic styles for
 synthetic content and vice versa. Augmentation cannot fix them; richer (e.g. CLIP-style)
