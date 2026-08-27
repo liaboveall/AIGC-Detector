@@ -1,0 +1,11 @@
+torch
+torchvision
+timm
+pandas
+scikit-learn
+Pillow
+PyYAML
+tqdm
+tensorboard
+datasets>=5.0
+pyarrow

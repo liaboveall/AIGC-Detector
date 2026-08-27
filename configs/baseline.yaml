@@ -1,0 +1,43 @@
+seed: 2026
+device: auto
+
+data:
+  dataset_root: Dataset
+  train_manifest: training_main.csv
+  val_manifest: validation_pool.csv
+  image_size: 224
+  batch_size: 32
+  num_workers: 4
+  pin_memory: true
+  balanced_sampling: true
+  # Full smoke evaluation showed blur 2.0, scale 0.25 and noise 0.10 as
+  # the weakest conditions. A slightly higher augmentation rate targets them
+  # without making every training image degraded.
+  train_degradation_probability: 0.70
+  max_train_samples: null
+  max_val_samples: 6000
+
+model:
+  name: convnext_tiny
+  pretrained: true
+  dropout: 0.10
+  drop_path: 0.10
+
+training:
+  epochs: 8
+  learning_rate: 0.0002
+  weight_decay: 0.05
+  warmup_epochs: 1
+  accumulation_steps: 1
+  gradient_clip: 1.0
+  max_batches_per_epoch: null
+  max_val_batches: null
+
+validation:
+  # Robustness-driven checkpoint selection uses the strongest representative
+  # severity from every major degradation family.
+  conditions: [clean, jpeg_30, blur_2.0, scale_0.25, noise_0.10]
+
+output:
+  directory: outputs/baseline
+  tensorboard: true
