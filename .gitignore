@@ -16,13 +16,25 @@ outputs/
 *.pth
 *.log
 
-# Datasets (hundreds of GB — must never be committed)
-Dataset/
+# Datasets: image bodies and manifest CSVs (all >1 MB) must never be committed.
+# Only Dataset/README_DATASET.md and the manifest rebuild script are tracked;
+# the seed manifests are regenerated with the commands documented in the README.
+Dataset/*
+!Dataset/README_DATASET.md
+!Dataset/audit/
+Dataset/audit/*
+!Dataset/audit/build_dataset_manifests.py
 
 # Local working files
-*.pdf
 
-# Model/dataset download caches
+# Generated prediction output (created at repo root by README commands)
+predictions.json
+
+# Archives only live in local data staging caches.
+Dataset/_archives/
+Dataset/_hf_cache*/
 *.tar
 *.tar.gz
 *.zip
+*.pdf
+!docs/**/*.pdf

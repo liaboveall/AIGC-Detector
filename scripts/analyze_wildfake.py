@@ -37,6 +37,14 @@ def resolve(path: str) -> Path:
     return candidate if candidate.is_absolute() else ROOT / candidate
 
 
+def display_path(path: Path) -> str:
+    """Report repository-relative paths in artifacts so they survive machine changes."""
+    try:
+        return path.relative_to(ROOT).as_posix()
+    except ValueError:
+        return path.as_posix()
+
+
 def read_predictions(path: Path) -> pd.DataFrame:
     frame = pd.read_csv(path)
     missing = REQUIRED_PREDICTION_COLUMNS - set(frame.columns)
@@ -356,8 +364,8 @@ def main() -> None:
 
     payload = {
         "policy": {
-            "threshold_selected_on": str(calibration_path),
-            "target_evaluated_on": str(target_path),
+            "threshold_selected_on": display_path(calibration_path),
+            "target_evaluated_on": display_path(target_path),
             "wildfake_used_for_threshold_selection": False,
         },
         "calibrated_threshold": threshold,
