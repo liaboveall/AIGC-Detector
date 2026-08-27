@@ -1,0 +1,107 @@
+{
+  "policy": {
+    "threshold_selected_on": "E:\\TikTok TechJam\\outputs\\multisource\\analysis_smoke\\calibration_predictions.csv",
+    "target_evaluated_on": "E:\\TikTok TechJam\\outputs\\multisource\\analysis_smoke\\wildfake_predictions.csv",
+    "wildfake_used_for_threshold_selection": false
+  },
+  "calibrated_threshold": 0.315,
+  "calibration": {
+    "objective": "mean condition-balanced accuracy; ties use worst condition then proximity to 0.5",
+    "conditions": [
+      "blur_2.0",
+      "clean",
+      "jpeg_30",
+      "noise_0.10",
+      "scale_0.25"
+    ],
+    "mean_balanced_accuracy": 0.9162337662337663,
+    "worst_balanced_accuracy": 0.8722943722943723,
+    "by_condition": {
+      "blur_2.0": 0.8722943722943723,
+      "clean": 0.9307359307359306,
+      "jpeg_30": 0.9523809523809523,
+      "noise_0.10": 0.9296536796536796,
+      "scale_0.25": 0.8961038961038961
+    }
+  },
+  "full_robustness": {
+    "mean_degraded_auc": 0.9256477486392046,
+    "worst_degraded_auc": 0.7833861464974998,
+    "robust_score": 0.8971954282108637
+  },
+  "target_threshold_comparison": [
+    {
+      "condition": "clean",
+      "threshold_name": "default_0.5",
+      "count": 64,
+      "threshold": 0.5,
+      "roc_auc": 0.9521484375,
+      "average_precision": 0.9581683109109045,
+      "accuracy": 0.84375,
+      "balanced_accuracy": 0.84375,
+      "precision": 0.9583333333333334,
+      "recall": 0.71875,
+      "specificity": 0.96875,
+      "f1": 0.8214285714285714,
+      "tn": 31,
+      "fp": 1,
+      "fn": 9,
+      "tp": 23
+    },
+    {
+      "condition": "clean",
+      "threshold_name": "calibrated",
+      "count": 64,
+      "threshold": 0.315,
+      "roc_auc": 0.9521484375,
+      "average_precision": 0.9581683109109045,
+      "accuracy": 0.84375,
+      "balanced_accuracy": 0.84375,
+      "precision": 0.9230769230769231,
+      "recall": 0.75,
+      "specificity": 0.9375,
+      "f1": 0.8275862068965517,
+      "tn": 30,
+      "fp": 2,
+      "fn": 8,
+      "tp": 24
+    },
+    {
+      "condition": "blur_2.0",
+      "threshold_name": "default_0.5",
+      "count": 64,
+      "threshold": 0.5,
+      "roc_auc": 0.71533203125,
+      "average_precision": 0.7314678380793055,
+      "accuracy": 0.640625,
+      "balanced_accuracy": 0.640625,
+      "precision": 0.6451612903225806,
+      "recall": 0.625,
+      "specificity": 0.65625,
+      "f1": 0.634920634920635,
+      "tn": 21,
+      "fp": 11,
+      "fn": 12,
+      "tp": 20
+    },
+    {
+      "condition": "blur_2.0",
+      "threshold_name": "calibrated",
+      "count": 64,
+      "threshold": 0.315,
+      "roc_auc": 0.71533203125,
+      "average_precision": 0.7314678380793055,
+      "accuracy": 0.65625,
+      "balanced_accuracy": 0.65625,
+      "precision": 0.6388888888888888,
+      "recall": 0.71875,
+      "specificity": 0.59375,
+      "f1": 0.676470588235294,
+      "tn": 19,
+      "fp": 13,
+      "fn": 9,
+      "tp": 23
+    }
+  ],
+  "representative_error_count": 31
+}

@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Environments
+.venv/
+venv/
+
+# IDE
+.vscode/
+
+# Training artifacts
+outputs/
+*.pt
+*.pth
+*.log
+
+# Datasets (hundreds of GB — must never be committed)
+Dataset/
+
+# Local working files
+_pdf_text.txt
+*.pdf
+
+# Model/dataset download caches
+*.tar
+*.tar.gz
+*.zip
