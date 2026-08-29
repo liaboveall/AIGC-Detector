@@ -24,12 +24,14 @@ this release.
   dataset documentation, aggregate evidence bundle, and release notes use Adapter v2.
 - [x] Dataset images, private manifests, per-image internal predictions, local planning
   files, and raw training outputs remain excluded from Git.
-- [ ] Public `main` contains the delivery commits.
-- [ ] Public `v1.0.0` Release contains the checkpoint and checksum assets.
-- [ ] Publicly downloaded asset metadata matches the frozen byte size and SHA-256.
+- [x] Public `main` contains the delivery commits.
+- [x] Public `v1.0.0` Release contains the checkpoint and checksum assets.
+- [x] GitHub asset metadata matches the frozen 112,172,235-byte size and SHA-256.
 
-The final three publication checks are completed and updated during the GitHub release
-step; they cannot be truthfully checked before the corresponding public state exists.
+The final publication checks were completed during the GitHub release step. GitHub's
+asset digest is
+`sha256:c5e0c7ec9e39b505a7269826f034969e53340d8ca2c74d60cc9b1868e43f44ec`,
+matching the source, read-only backup, staging copy, and published checksum manifest.
 
 ## Devpost/account-bound actions
 
