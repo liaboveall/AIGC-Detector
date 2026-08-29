@@ -1,0 +1,55 @@
+seed: 2026
+device: auto
+
+data:
+  dataset_root: Dataset
+  train_manifest: communityforensics_train_balanced.csv
+  val_manifest: validation_modern_combined_selection_12000.csv
+  image_size: 224
+  batch_size: 16
+  num_workers: 2
+  pin_memory: true
+  balanced_sampling: true
+  train_degradation_probability: 0.70
+  train_degradation_kind_weights:
+    jpeg: 1.0
+    blur: 1.0
+    scale: 1.0
+    noise: 1.0
+  train_blur_weights: [1.0, 1.0, 1.0]
+  train_reencode_probability: 0.0
+  max_train_samples: 512
+  max_val_samples: 512
+
+model:
+  name: convnext_tiny
+  pretrained: false
+  dropout: 0.10
+  drop_path: 0.10
+
+training:
+  epochs: 1
+  learning_rate: 0.00002
+  weight_decay: 0.05
+  warmup_epochs: 0
+  accumulation_steps: 1
+  gradient_clip: 1.0
+  max_batches_per_epoch: 4
+  max_val_batches: 4
+  evaluate_init_checkpoint: true
+
+validation:
+  conditions:
+    - clean
+    - jpeg_30
+    - blur_2.0
+    - scale_0.25
+    - noise_0.10
+    - color_-0.20
+    - color_0.20
+    - crop_0.80
+
+output:
+  directory: outputs/multisource_modern_finetune_smoke
+  tensorboard: false
+  save_epoch_checkpoints: true

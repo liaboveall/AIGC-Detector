@@ -1,0 +1,13 @@
+split,dataset,source_class,binary_label,extension,pil_format,count
+train,GenImage,full_synthetic,1,png,png,100
+train,GenImage,real,0,jpeg,jpeg,100
+train,SID_Set,full_synthetic,1,png,png,100
+train,SID_Set,real,0,jpeg,jpeg,100
+train,SID_Set,tampered,1,png,jpeg,87
+train,SID_Set,tampered,1,png,png,13
+validation,GenImage,full_synthetic,1,png,png,100
+validation,GenImage,real,0,jpeg,jpeg,100
+validation,SID_Set,full_synthetic,1,png,png,100
+validation,SID_Set,real,0,jpeg,jpeg,100
+validation,SID_Set,tampered,1,png,jpeg,95
+validation,SID_Set,tampered,1,png,png,5

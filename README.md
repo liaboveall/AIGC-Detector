@@ -1,243 +1,232 @@
-# Robust Detection of AI-Generated Images Under Real-World Transformations
+# Robust AIGC Image Detector — TikTok TechJam Track 5
 
-**TikTok TechJam 2026 — Track 5**
+A compact, degradation-aware detector for distinguishing authentic images from
+AI-generated images after JPEG recompression, Gaussian blur, resizing, additive noise,
+color shifts, and cropping.
 
-AI-generated images are increasingly indistinguishable from real photographs, and in
-real deployments they rarely arrive clean: they are re-compressed, blurred, downscaled,
-noised, color-shifted, and cropped by social-media pipelines. This project builds a
-binary detector that must keep working after those real-world transformations.
-
-Our submission is a **ConvNeXt-Tiny binary classifier** (27,820,897 parameters — well
-under the official 2-billion parameter limit) trained on a multi-source mixture of
-real and synthetic images, with a blur-focused fine-tuning stage, and evaluated under
-the official 16-condition robustness protocol on a strictly held-out WildFake split.
+**Release status:** `v1.0.0` is frozen. The formal checkpoint is a ConvNeXt-Tiny base
+plus a small residual adapter: **28,018,018 parameters**, threshold **0.209**, SHA-256
+`C5E0C7EC9E39B505A7269826F034969E53340D8CA2C74D60CC9B1868E43F44EC`.
 
 ## Results at a glance
 
-Evaluation set: official WildFake demo subset (4,998 COCO val2017 real + 8,843
-DALL·E 3 Advanced synthetic = 13,841 images per condition), **never used for training
-or threshold selection**. Metric: ROC AUC.
+### Internal development selection
 
-| Family | Conditions | AUC range |
-|---|---|---|
-| Clean | clean | **0.9636** |
-| JPEG compression | q90 / q70 / q50 / q30 | 0.9818 / 0.9887 / 0.9897 / 0.9808 |
-| Gaussian blur | σ 0.5 / 1.0 / 2.0 | 0.9604 / 0.9469 / 0.8151 |
-| Downscale | ×0.5 / ×0.25 | 0.9407 / 0.9522 |
-| Additive noise | σ 0.02 / 0.05 / 0.10 | 0.8598 / 0.8719 / 0.8576 |
-| Brightness shift | −0.20 / +0.20 | 0.9284 / 0.9240 |
-| Center crop | 0.80 | 0.9082 |
+Fixed 12,000-image, three-source selection split; 16 deterministic conditions. This is
+the model-selection result, not an official hidden-test score.
 
-- Mean degraded AUC: **0.9271** · Worst degraded AUC: **0.8151** (`blur_2.0`)
-- Robust score (`0.8 × mean + 0.2 × worst`): **0.9047** (previous multisource model: 0.8972)
-- Decision threshold **0.209**, calibrated only on the internal validation split
-  (five degradation conditions), then frozen.
+| Metric | Frozen base | Adapter v2 | Delta |
+|---|---:|---:|---:|
+| Robust score | 0.930488 | **0.942425** | **+0.011938** |
+| Clean AUC | 0.965637 | **0.973125** | +0.007488 |
+| Mean degraded AUC | 0.939995 | **0.950238** | +0.010243 |
+| Worst degraded AUC | 0.892458 | **0.911173** | +0.018715 |
+| CommunityForensics robust score | 0.903910 | **0.928369** | +0.024459 |
+| GenImage robust score | 0.920356 | 0.919772 | -0.000584 |
+| SID_Set robust score | 0.958171 | 0.957819 | -0.000352 |
 
-Full breakdowns: [`docs/ROBUSTNESS_SUMMARY.md`](docs/ROBUSTNESS_SUMMARY.md) ·
-error analysis: [`docs/ERROR_ANALYSIS.md`](docs/ERROR_ANALYSIS.md)
+All 16 global condition AUCs improved. The candidate passed all **31/31 pre-registered
+acceptance gates**, including source-specific degradation-family guards.
 
-## How we got here
+### One-time WildFake observation
 
-1. **SID-only baseline** — strong in-domain (mean degraded AUC 0.9732 on SID
-   validation) but failed cross-source: WildFake clean AUC was only ~0.646.
-2. **Multi-source training** (SID_Set + GenImage subset, multiple generators, exact-hash
-   deduplication) restored cross-source generalization.
-3. **Blur fine-tuning** from the frozen multisource checkpoint, raising `blur_2.0`
-   training exposure from ~5.8% to 20%, repaired the weakest condition
-   (WildFake `blur_2.0` AUC 0.7834 → 0.8151) and produced the final submission model.
+After freezing the checkpoint and threshold, we observed it once on the organizer's
+WildFake demo subset: 4,998 COCO real images and 8,843 DALL-E 3 Advanced images.
+WildFake was never used for training, checkpoint selection, or threshold selection.
 
-See [`reports/main_baseline_analysis.md`](reports/main_baseline_analysis.md) and
-[`reports/wildfake_analysis_blur_finetune/report.md`](reports/wildfake_analysis_blur_finetune/report.md).
+| Metric | Frozen base | Adapter v2 | Delta |
+|---|---:|---:|---:|
+| Robust score | 0.904694 | **0.908171** | +0.003477 |
+| Clean AUC | 0.963591 | **0.964738** | +0.001148 |
+| Mean degraded AUC | 0.927088 | **0.929697** | +0.002610 |
+| Worst AUC (`blur_2.0`) | 0.815118 | **0.822067** | +0.006949 |
+| Mean balanced accuracy at 0.209 | 0.8341 | **0.8400** | +0.0059 |
 
-## Environment setup
+All 16 WildFake condition AUC and balanced-accuracy values were non-decreasing versus
+the frozen base. WildFake remains a narrow, demonstration-only observation; no
+leaderboard, hidden-test, or universal-generator claim is made.
 
-Versions are **not pinned**; the project runs on recent stable releases.
+Full aggregate evidence is tracked in
+[`reports/final_adapter_v2/`](reports/final_adapter_v2/README.md).
 
-```powershell
-conda create -n jam python=3.11 -y
-conda activate jam
-pip install -r requirements.txt
+## Model and training design
+
+The final model wraps the accepted ConvNeXt-Tiny detector with a zero-initialized
+`768 -> 256 -> 1` residual MLP:
+
+```text
+image -> frozen ConvNeXt-Tiny -> base logit
+                          \-> pooled 768-d feature -> residual adapter -> + final logit
 ```
 
-Key libraries: PyTorch, torchvision, timm (ConvNeXt-Tiny weights), pandas,
-scikit-learn, Pillow, PyYAML, tqdm, tensorboard, datasets, pyarrow.
+- Frozen base: 27,820,897 parameters.
+- Trainable adapter: 197,121 parameters (0.70% of the total).
+- Total: 28,018,018 parameters, far below the Track 5 two-billion-parameter cap.
+- Training data: 560,000 balanced samples — CommunityForensics-Small 50%, GenImage
+  25%, SID_Set 25%; each source is label-balanced.
+- Objective: BCE on CommunityForensics plus a residual-squared preservation penalty on
+  GenImage and SID_Set, preventing the modern-domain adaptation from overwriting older
+  forensic knowledge.
+- Augmentation: all six official degradation families plus 15% label-independent
+  JPEG/WebP re-encoding to reduce compression-history shortcuts.
+- Selection: robustness-aware score `0.8 * mean degraded AUC + 0.2 * worst degraded AUC`.
 
-## Reproduction
+The experiment chain deliberately rejected modern-only fine-tuning, replay-only,
+Replay+KD, and model-soup candidates when they violated cross-source guards. The formal
+model is the best candidate that passed the complete pre-registered acceptance protocol,
+not merely the checkpoint with the largest single headline number.
 
-### 1. Data preparation
+## Quick start
 
-Place the datasets under `Dataset/` (see `Dataset/README_DATASET.md`), then build
-the manifests. The seed manifests (`training_pool.csv`, `validation_pool.csv`,
-`wildfake_demo.csv`, the SID/CIFAKE pools, …) are all larger than 1 MB, so they are
-**not committed**; rebuild them deterministically (fixed seeds) from the extracted
-datasets:
+### 1. Install
 
 ```powershell
-python Dataset/audit/build_dataset_manifests.py    # seed manifests + dedup/audit tables
-python scripts/build_training_manifests.py          # SID-only manifests
-python scripts/build_multisource_manifests.py       # SID + GenImage manifests (deduplicated)
+git clone https://github.com/liaboveall/AIGC-Detector.git
+cd AIGC-Detector
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 ```
 
-GenImage shards can be fetched with `scripts/download_genimage_subset.py` and verified
-with `scripts/verify_genimage_subset.py`.
+The frozen release was verified with Python 3.14.7, PyTorch 2.13.0+cu132, and the exact
+top-level package versions in `requirements.txt`. Select the appropriate official
+PyTorch CPU/CUDA wheel for the target machine if the default wheel is unsuitable.
 
-### 2. Verify the pipeline (smoke tests)
+### 2. Download and verify the frozen checkpoint
+
+```powershell
+New-Item -ItemType Directory -Force weights | Out-Null
+Invoke-WebRequest `
+  https://github.com/liaboveall/AIGC-Detector/releases/download/v1.0.0/aigc-detector-adapter-v2.pt `
+  -OutFile weights/aigc-detector-adapter-v2.pt
+Get-FileHash weights/aigc-detector-adapter-v2.pt -Algorithm SHA256
+python scripts/verify_release.py
+```
+
+The expected checksum is recorded in
+[`weights/SHA256SUMS.txt`](weights/SHA256SUMS.txt). `verify_release.py` checks the hash,
+checkpoint schema, parameter count, adapter flag, unreadable-image fallback, and exact
+directory-to-JSON output contract.
+
+### 3. Run submission-format inference
+
+```powershell
+python predict.py --input-dir path/to/images --output predictions.json
+```
+
+`predict.py` scans recursively and writes one continuous AI probability per supported
+image:
+
+```json
+[
+  {"image_path": "subfolder/example.jpg", "pred": 0.9731}
+]
+```
+
+- `pred=0` means more likely authentic; `pred=1` means more likely AI-generated.
+- Unreadable supported image files receive the neutral score `0.5` instead of crashing.
+- Override the default asset with `--checkpoint PATH` and hardware with `--device cpu`
+  or `--device cuda:0`.
+- The frozen 0.209 threshold is documented for binary demos, but the required output is
+  the continuous score.
+
+## Verification
+
+Self-contained unit and pipeline checks:
 
 ```powershell
 python test.py
-python train.py --config configs/baseline_smoke.yaml --epochs 1 --max-train-batches 5 --max-val-batches 5 --num-workers 0 --no-pretrained --output-dir outputs/pipeline_test
-python train.py --config configs/multisource_smoke.yaml
+python -m compileall -q src scripts train.py train_adapter.py train_replay_distill.py evaluate.py predict.py
 ```
 
-### 3. Train
+Full release check after downloading the checkpoint:
 
 ```powershell
-# Stage 1: multi-source training (downloads ImageNet weights on first run)
-python train.py --config configs/multisource.yaml
-
-# Stage 2: blur fine-tuning from the frozen multisource checkpoint
-python train.py --config configs/multisource_blur_finetune.yaml --init-checkpoint outputs/multisource/best.pt
+python scripts/verify_release.py
 ```
 
-Checkpoint selection uses `0.8 × mean degraded AUC + 0.2 × worst degraded AUC` on the
-internal validation split only — never on WildFake.
-
-### 4. Evaluate (16-condition robustness suite)
-
-Internal validation split (default manifest from the checkpoint config):
+Local 16-condition evaluation requires the private image trees and regenerated
+manifests described in [`Dataset/README_DATASET.md`](Dataset/README_DATASET.md):
 
 ```powershell
-python evaluate.py --checkpoint outputs/multisource_blur_finetune/best.pt --suite full
+python evaluate.py `
+  --checkpoint weights/aigc-detector-adapter-v2.pt `
+  --manifest validation_modern_combined_selection_12000.csv `
+  --suite full `
+  --output outputs/release_selection_full.json
 ```
 
-Full 16-condition evaluation of the final model on the held-out WildFake demo subset
-— this produces `reports/wildfake_analysis_blur_finetune/` inputs:
+## Training reproduction
+
+Datasets and large manifests are intentionally excluded from Git. After recreating the
+layout and manifests documented in [`Dataset/README_DATASET.md`](Dataset/README_DATASET.md),
+the final adapter experiment is configured by [`configs/adapter_v2.yaml`](configs/adapter_v2.yaml):
 
 ```powershell
-python evaluate.py --checkpoint outputs/multisource_blur_finetune/best.pt --manifest wildfake_demo.csv --suite full --output outputs/multisource_blur_finetune/wildfake_demo_full.json --predictions-output outputs/multisource_blur_finetune/wildfake_demo_full_predictions.csv
+python train_adapter.py `
+  --config configs/adapter_v2.yaml `
+  --output-dir outputs/reproduction_adapter_v2
 ```
 
-Per-image score export for threshold calibration (internal validation, five
-degradation conditions — WildFake is never used here):
+The config expects the protected historical base checkpoint at
+`outputs/multisource_blur_finetune/best.pt`. Reproduction runs must use a new output
+directory and must not overwrite the frozen release asset.
 
-```powershell
-python evaluate.py --checkpoint outputs/multisource/best.pt --manifest validation_multisource.csv --conditions clean,jpeg_30,blur_2.0,scale_0.25,noise_0.10 --output outputs/multisource/calibration_validation_5_conditions.json --predictions-output outputs/multisource/calibration_validation_5_conditions_predictions.csv
-```
+## Data governance
 
-Threshold calibration + final held-out analysis (writes
-`reports/wildfake_analysis_blur_finetune/`):
+- CommunityForensics-Small: 553,531 usable images, 4,780 fake-generator identities;
+  pinned source revision `6c539a534c07917307c381f5af4053c6091b5278`.
+- Generator split: 3,822 train / 479 selection / 479 confirmation, mutually disjoint.
+- Exact SHA-256 checks separate training from selection and confirmation; WildFake
+  exact/perceptual overlap checks and NSFW exclusion are applied during export.
+- Dataset image bodies and large manifests are never committed.
+- CommunityForensics-Small is recorded as CC-BY-NC-SA-4.0. SID_Set, GenImage, COCO,
+  CIFAKE, and WildFake remain subject to their respective upstream terms. Users must
+  review those terms for their intended use; this repository does not redistribute the
+  datasets.
 
-```powershell
-python scripts/analyze_wildfake.py --calibration-predictions outputs/multisource/calibration_validation_5_conditions_predictions.csv --target-predictions outputs/multisource_blur_finetune/wildfake_demo_full_predictions.csv --full-evaluation outputs/multisource_blur_finetune/wildfake_demo_full.json --output-dir reports/wildfake_analysis_blur_finetune
-```
+Aggregate acquisition and split facts are preserved in
+[`reports/final_adapter_v2/dataset_summary.json`](reports/final_adapter_v2/dataset_summary.json).
 
-The threshold is selected only on `validation_multisource.csv`; WildFake remains held
-out and is never used for training or threshold selection.
+## Evaluation integrity and limitations
 
-### 5. Submission-format inference
+- The 12,000-image selection split is a development set and influenced model choice.
+- The 16,000-image confirmation split was opened exactly once for an earlier model-soup
+  candidate. That candidate was rejected, the split was permanently consumed, and it
+  was not reused for Adapter v2.
+- WildFake was observed once only after Adapter v2 and threshold 0.209 were frozen. It
+  contains one fake-generator family and is demonstration evidence, not a final score.
+- Heavy blur remains the primary failure mode (`blur_2.0` WildFake AUC 0.8221, balanced
+  accuracy 0.7322). Strong noise and crop also remain weaker than clean/JPEG ranking.
+- Under JPEG q30, ranking remains high (AUC 0.9811) but the fixed-threshold fake recall
+  falls to 53.69%, showing score-distribution shift rather than ranking collapse.
+- No claim of state of the art, universal generator coverage, or competition-winning
+  performance is made without an official hidden evaluation.
 
-```powershell
-python predict.py --checkpoint outputs/multisource_blur_finetune/best.pt --input-dir path/to/images --output predictions.json
-```
+See [`docs/ROBUSTNESS_SUMMARY.md`](docs/ROBUSTNESS_SUMMARY.md) and
+[`docs/ERROR_ANALYSIS.md`](docs/ERROR_ANALYSIS.md) for reviewer-facing detail.
 
-Output is a JSON array of `{"image_path", "pred"}` objects; the input directory is
-scanned recursively and unreadable images receive the neutral fallback score `0.5`.
+## Submission materials
 
-## Model weights
-
-The final checkpoint (`multisource_blur_finetune/best.pt`) will be distributed via a
-GitHub Release:
-
-> `https://github.com/liaboveall/AIGC-Detector/releases`
-
-Each Release asset ships with its **SHA256 checksum**; verify with:
-
-```powershell
-Get-FileHash best.pt -Algorithm SHA256
-```
-
-and compare against the checksum published in the Release notes.
-
-## Demo video
-
-The 3-minute demo video will be uploaded with the Devpost submission; the shot list
-and narration script live in [`docs/DEMO_VIDEO_SCRIPT.md`](docs/DEMO_VIDEO_SCRIPT.md).
-*(Video link placeholder — to be filled after the Devpost upload.)*
-
-## Limitations & future work
-
-- **Noise robustness regressed slightly.** The blur fine-tune traded a little noise
-  performance (`noise_0.10` AUC 0.8780 → 0.8576) for blur gains. Next step: a joint
-  blur+noise augmentation schedule or a second fine-tune stage restoring noise exposure.
-- **`blur_2.0` is still the weakest condition** (AUC 0.8151). Strong blur destroys the
-  high-frequency forensic cues the model relies on; a multi-scale or frequency-domain
-  branch could help.
-- **Content-driven systematic errors.** A small set of COCO real images is repeatedly
-  flagged fake with scores > 0.99, and a few DALL·E 3 Advanced images are missed with
-  scores < 0.001 across *all* conditions (see
-  [`docs/ERROR_ANALYSIS.md`](docs/ERROR_ANALYSIS.md)). These are semantic failure modes
-  that augmentation cannot fix; semantic/CLIP-style features are the planned remedy.
-- **Cross-generator generalization is unproven beyond DALL·E 3.** Training covers
-  several generators via GenImage, but evaluation was only possible on DALL·E 3
-  Advanced; behavior on unseen generator families needs further testing.
-- **Fixed single threshold.** 0.209 optimizes mean balanced accuracy across the five
-  calibration conditions; deployments with different FP/FN cost profiles should
-  re-calibrate on their own held-out data.
-
-## Team contributions
-
-| Member | Contribution |
-|---|---|
-| _[Name 1]_ | _[e.g., multi-source training pipeline, blur fine-tuning]_ |
-| _[Name 2]_ | _[e.g., robustness evaluation harness, error analysis]_ |
-| _[Name 3]_ | _[e.g., data preparation, documentation]_ |
-
-*(Placeholders — replace before submission.)*
-
-## Compliance statements
-
-- **Parameter budget:** the model is ConvNeXt-Tiny with **27,820,897 parameters**,
-  far below the official 2-billion parameter cap.
-- **Data compliance:** training data comes from publicly released research datasets
-  (SID_Set; GenImage subset from public generators; COCO val2017 real images via the
-  official WildFake demo bundle). CIFAKE was kept for ablation only and excluded from
-  the final training mixture. The WildFake evaluation subset was used exclusively for
-  demonstration evaluation — never for training, checkpoint selection, or threshold
-  tuning.
-- **Dataset licensing:** all datasets are used for research purposes under the
-  licenses of their official releases: COCO val2017 images are distributed under the
-  Flickr Terms with individual images retaining their original licenses (predominantly
-  CC-BY 4.0); GenImage, SID_Set, and CIFAKE are used under the terms published on
-  their respective official release pages.
-- **Evaluation integrity:** threshold 0.209 was frozen on the internal validation
-  split before any WildFake scoring of the final model.
-
-## Assumptions
-
-1. Images are standard RGB formats decodable by Pillow (JPEG/PNG/WebP); corrupt files
-   fall back to the neutral score 0.5.
-2. The scoring metric is ROC AUC per condition, with the robust score
-   `0.8 × mean degraded AUC + 0.2 × worst degraded AUC`.
-3. The official degradation transforms (JPEG quality, Gaussian blur σ, downscale
-   factor, Gaussian noise σ, brightness shift, center-crop ratio) are applied by the
-   organizer-side evaluation harness; our `evaluate.py` reproduces them locally for
-   development.
-4. One score per image; no ensembling or test-time augmentation at inference.
-5. Hardware assumption: a single CUDA GPU (training ran on one GPU); CPU inference is
-   supported but slower.
+- [`docs/DEVPOST_DESCRIPTION.md`](docs/DEVPOST_DESCRIPTION.md) — copy-ready project text.
+- [`docs/DEMO_VIDEO_SCRIPT.md`](docs/DEMO_VIDEO_SCRIPT.md) — final-model three-minute shot list.
+- [`docs/ROBUSTNESS_SUMMARY.md`](docs/ROBUSTNESS_SUMMARY.md) — 16-condition results.
+- [`docs/ERROR_ANALYSIS.md`](docs/ERROR_ANALYSIS.md) — threshold and failure analysis.
+- [`docs/DELIVERY_CHECKLIST.md`](docs/DELIVERY_CHECKLIST.md) — automated gates and the
+  remaining Devpost-only human actions.
 
 ## Repository layout
 
-```
-configs/        YAML training configs (baseline, multisource, blur fine-tune, smoke)
-scripts/        manifest builders, GenImage downloader/verifier, error analysis
-src/            model, dataset, transforms, training engine, metrics
-train.py        training entry point
-evaluate.py     16-condition robustness evaluation entry point
-test.py         unit/pipeline tests
-predict.py      submission-format inference
-docs/           reviewer-facing deliverables (robustness summary, error analysis, …)
-reports/        machine-generated analysis artifacts
-Dataset/        dataset tree; image bodies and large manifests are not committed,
-                only Dataset/README_DATASET.md and the audit rebuild script are tracked
+```text
+configs/                 Training and adaptation configurations
+Dataset/                 Layout and deterministic manifest-rebuild documentation
+docs/                    Devpost, demo, robustness, error, and delivery documents
+reports/final_adapter_v2 Tracked aggregate evidence for the frozen model
+scripts/                 Acquisition, audit, evaluation, and release-verification tools
+src/                     Models, adapter, data, transforms, metrics, and training helpers
+weights/                 Release download instructions and SHA-256 manifest
+predict.py               Official directory-to-JSON inference entry point
+evaluate.py              Deterministic robustness evaluation entry point
+test.py                  Self-contained unit/pipeline checks
 ```

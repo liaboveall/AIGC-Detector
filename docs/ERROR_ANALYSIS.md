@@ -1,96 +1,126 @@
-# Deliverable 5 — Error Analysis
+# Error Analysis — Frozen Adapter v2
 
-Scope: final submission model (`outputs/multisource_blur_finetune/best.pt`) on the held-out
-WildFake demo subset (13,841 images/condition), frozen threshold **0.209**.
-All findings below are drawn from
-[`../reports/wildfake_analysis_blur_finetune/report.md`](../reports/wildfake_analysis_blur_finetune/report.md);
-full per-case exports live in
-[`error_cases.csv`](../reports/wildfake_analysis_blur_finetune/error_cases.csv).
+**Scope:** formal `v1.0.0` checkpoint, one-time WildFake post-freeze observation,
+continuous ROC AUC plus binary behavior at the frozen threshold 0.209.
 
-## 1. Weakest point: heavy blur (`blur_2.0`)
+WildFake contains 4,998 COCO val2017 real images and 8,843 DALL-E 3 Advanced fake
+images. It is a demonstration subset rather than a universal cross-generator test.
 
-- Lowest ranking performance of all 16 conditions: **ROC AUC 0.8151**
-  (clean: 0.9636; blur_1.0: 0.9469).
-- At threshold 0.209 the confusion shifts dramatically: clean FP/FN = 363/1322, but under
-  `blur_2.0` it becomes **1,899 FP / 1,504 FN** — the condition with the highest
-  false-positive count and the most severe FP/FN imbalance. (`color_-0.20` is the only
-  other condition where FPs outnumber FNs, 1,227/867; every other condition stays
-  FN-dominated.)
-- Cause: σ=2.0 Gaussian blur removes/distorts the high-frequency forensic cues the
-  detector exploits. The blur fine-tune stage already improved this condition materially
-  (WildFake `blur_2.0` AUC 0.7834 → 0.8151), and per-image inspection shows the fix works
-  mainly by pushing *real*-image scores down (blur_2.0 real median 0.1788 → 0.0552) so the
-  frozen threshold transfers without recalibration.
+## Executive diagnosis
 
-## 2. JPEG calibration drift: ranking survives, binary decisions pay
+The model's ranking is strong on clean and JPEG-compressed images, but three different
+failure mechanisms remain:
 
-- All JPEG qualities keep **higher AUC than clean** (0.9808–0.9897), i.e. the model's
-  ranking ability is fully intact — or better — under recompression.
-- Yet fixed-threshold accuracy collapses from 0.8985 (q90) to **0.6971 (q30)**: strong
-  compression compresses the fake-score distribution toward the threshold, so recall at
-  0.209 drops to 0.5269 even though AUC stays at 0.9808.
-- Interpretation: this is a **score-calibration shift, not a loss of discriminative
-  signal**. The loss happens in the binary decision layer; emitting continuous confidence
-  scores (as our submission does) avoids hard-coding this fragility.
-- Example (jpeg_30 false positive): `WildFake_demo/Images/Real/coco/coco2017/val2017/img163785.jpg`
-  scored 0.8960.
+1. heavy blur destroys or confounds forensic texture cues and raises real-image scores;
+2. strong noise and crop reduce fake recall;
+3. strong JPEG preserves ranking but shifts the score distribution below the fixed
+   operating threshold.
 
-## 3. Content-driven hard cases (systematic, not degradation-driven)
+The adapter improves fake recall consistently without materially changing aggregate
+false positives, but it does not eliminate content-driven errors that survive every
+transformation.
 
-A small set of images fails **across nearly every condition**, which rules out
-transformation-specific causes:
+## Binary error profile at threshold 0.209
 
-**Recurring real-image false positives (COCO val2017), scores > 0.99 on clean:**
+| Condition | AUC | bACC | Real FPR | Fake recall | Primary failure |
+|---|---:|---:|---:|---:|---|
+| clean | 0.9647 | 0.8929 | 7.28% | 85.86% | recurring semantic errors |
+| jpeg_30 | 0.9811 | 0.7676 | 0.18% | 53.69% | score shift / false negatives |
+| blur_2.0 | 0.8221 | 0.7322 | 37.62% | 84.06% | real false positives |
+| noise_0.10 | 0.8604 | 0.7630 | 13.95% | 66.55% | both sides degrade |
+| crop_0.80 | 0.9112 | 0.8233 | 6.22% | 70.88% | fake false negatives |
 
-| Image | clean | blur_1.0 | jpeg_50 |
-|---|---:|---:|---:|
-| `Dataset/WildFake_demo/Images/Real/coco/coco2017/val2017/img159953.jpg` | 0.9995 | 1.0000 | 0.6982 |
-| `Dataset/WildFake_demo/Images/Real/coco/coco2017/val2017/img160993.jpg` | 0.9995 | — | — |
-| `Dataset/WildFake_demo/Images/Real/coco/coco2017/val2017/img163818.jpg` | 0.9990 | — | — |
+Across all 16 conditions, Adapter v2 reduced false negatives from 32,038 to 30,374
+(-1,664) while false positives changed from 8,431 to 8,429 (-2). The residual branch
+therefore behaves as intended: it recovers modern fake examples while leaving the real
+decision boundary nearly unchanged.
 
-(`img159274.jpg` is the same kind of content-driven case, but its 0.9995 scores occur
-under the `noise_0.02/0.05/0.10` conditions; on clean it does not enter the top
-false-positive list.)
+Raw operating-point data are tracked in
+[`../reports/final_adapter_v2/wildfake_frozen_threshold_table.csv`](../reports/final_adapter_v2/wildfake_frozen_threshold_table.csv).
 
-**Recurring synthetic-image false negatives (DALL·E 3 Advanced), scores < 0.001 on clean:**
+## Failure mode 1: heavy blur
 
-| Image | clean | jpeg_30 | blur_2.0 |
-|---|---:|---:|---:|
-| `Dataset/WildFake_demo/Images/Diffusion_based/DALLE/Advanced/DALLE3/dalle3/2023110215025084768300d30fc34f/8148d0b6ad70932b3f6c4ec560e8c152.jpg` | 0.0005 | 0.0002 | 0.0006 |
-| `Dataset/WildFake_demo/Images/Diffusion_based/DALLE/Advanced/DALLE3/dalle3/202311011943129901ca391019566e/a4c1a07ecb0a5cd6f2ca29572120f434.jpg` | 0.0006 | 0.0002 | — |
+`blur_2.0` is the lowest-AUC condition and has the largest real-image false-positive
+rate. The score change is not a simple global calibration shift: fake recall remains
+reasonably high while authentic images move strongly toward the fake side.
 
-Full paths above point into the (uncommitted) dataset tree under
-`Dataset/WildFake_demo/`; every top case for all 16 conditions is exported in
-[`error_cases.csv`](../reports/wildfake_analysis_blur_finetune/error_cases.csv).
+Likely mechanism: the ConvNeXt detector relies on local texture, resampling, and
+high-frequency synthesis traces. Severe Gaussian blur removes those cues. Some smooth
+authentic scenes then resemble the low-detail statistics of generated images.
 
-These are **semantic failure modes** — the model mistakes certain photographic styles for
-synthetic content and vice versa. Augmentation cannot fix them; richer (e.g. CLIP-style)
-semantic features or generator-specific artifact branches are the planned remedy.
+Implication: changing the global threshold alone cannot repair this condition without
+substantially reducing fake recall. Future work needs new representation or training
+evidence, such as multi-scale/frequency features or additional authentic blurred data,
+and must be validated on a new development split rather than WildFake.
 
-## 4. Trade-off accounting: blur up, noise down
+## Failure mode 2: strong noise
 
-Comparing the final model with the previous multisource model on the internal validation
-(9,000 fakes per condition) and WildFake:
+At `noise_0.10`, AUC is 0.8604 and balanced accuracy is 0.7630. Noise corrupts both
+the real/fake forensic traces and the low-level statistics used by the detector.
 
-| Dimension | Old multisource | Blur fine-tune (final) |
-|---|---:|---:|
-| WildFake `blur_2.0` AUC | 0.7834 | **0.8151** |
-| WildFake `noise_0.10` AUC | **0.8780** | 0.8576 |
-| Robust score | 0.8972 | **0.9047** |
-| `blur_2.0` real median score | 0.1788 | 0.0552 |
-| `noise_0.10` FN @ 0.209 (internal val) | 753 | 1,004 |
+The internal selection result improved globally under all noise conditions, but the
+non-binding 0.002 stress test found a GenImage noise-family drop of 0.002583 versus the
+frozen base. This is small and below the formal 0.005 bound, yet it identifies the
+narrowest old-domain robustness margin in the accepted model.
 
-The fine-tune concentrates its gains on the real-image side (lower real scores, fewer
-blur FPs) and pays on the fake side under heavy JPEG/noise (more fake scores slip below
-0.209). The net robust score improved, so the trade was accepted for the submission.
+## Failure mode 3: JPEG score-distribution shift
 
-## 5. Threshold sanity
+JPEG q30 has excellent ranking (AUC 0.9811) and only 0.18% real false positives, but
+fake recall falls to 53.69% at threshold 0.209. Recompression moves many fake scores
+downward while preserving their ordering relative to real images.
 
-- 0.209 was chosen by maximizing mean balanced accuracy on the five internal calibration
-  conditions (`clean, jpeg_30, blur_2.0, scale_0.25, noise_0.10`); no WildFake-based
-  recalibration was performed afterwards.
-- Calibration improved clean balanced accuracy 0.8703 → 0.8889 at the default-0.5
-  comparison point, but under `blur_2.0` it is not a universal fix (0.7333 → 0.7250) —
-  severe blur needs model-level improvement, not threshold tuning.
-- Recommendation carried into the submission interface: always emit confidence scores;
-  the calibrated threshold is for binary demo decisions only.
+This distinction matters:
+
+- AUC says the model can still rank real versus fake well.
+- Balanced accuracy says the frozen threshold is not optimal for this transformed
+  distribution.
+
+The repository still emits continuous probabilities, allowing a deployment to
+calibrate its own operating point on a genuinely held-out target domain. We do not
+introduce a condition-specific threshold in the competition submission because the
+condition may be unknown and such tuning would require new validation data.
+
+## Persistent content-driven errors
+
+Some COCO real images remain high-scoring false positives under many or all conditions,
+and some DALL-E images remain low-scoring false negatives. These persistent cases are
+less likely to be caused by a particular codec or transformation; they reflect content,
+semantic prior, or generator-style mismatch.
+
+The tracked aggregate error-case table is
+[`../reports/final_adapter_v2/error_cases.csv`](../reports/final_adapter_v2/error_cases.csv).
+It contains dataset-relative identifiers and scores, not redistributed image bodies.
+
+## Threshold decision
+
+Adapter v2's internal threshold scan produced optima around 0.155-0.170, but the gain
+over 0.209 was only:
+
+- +0.00035 mean balanced accuracy over all 16 conditions;
+- +0.00122 over the historical five-condition calibration subset.
+
+Both changes lie below the estimated sampling-noise floor, while 0.209 preserves the
+pre-existing model's operating contract and enables direct base-versus-adapter
+comparison. Threshold 0.209 was therefore retained.
+
+## Format-history shortcut audit
+
+The combined historical datasets have a known label/codec association, so Adapter v2
+was trained with 15% label-independent JPEG/WebP re-encoding. A paired 3,000-image audit
+then compared decoded, JPEG q75, hash-random re-encoding, and neutralized random
+re-encoding views.
+
+Candidate-versus-base absolute AUC differences ranged from -0.00004 to -0.00064, with
+paired bootstrap intervals strongly overlapping. No detectable shortcut worsening was
+found. However, random re-encoding still lowers the candidate by approximately 0.0093
+AUC and stronger neutralization by 0.0162, so format invariance is not claimed.
+
+## Interpretation limits
+
+- Selection results are development results and influenced candidate choice.
+- The earlier 16,000-image confirmation set was consumed by a rejected model-soup
+  candidate and was not reused for Adapter v2.
+- WildFake was observed only after model and threshold freeze, but its fake side covers
+  one generator family.
+- No additional tuning should use the recorded WildFake errors. Further optimization
+  requires a new development set and a new untouched final test.

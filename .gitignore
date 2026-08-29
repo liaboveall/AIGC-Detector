@@ -27,6 +27,11 @@ Dataset/audit/*
 
 # Local working files
 _pdf_text.txt
+tmp/
+.qoder/
+AIGC检测迭代方向规划_*.md
+reports/compression_history_audit/diagnostic_predictions.csv
+reports/compression_history_audit/diagnostic_sample_manifest.csv
 
 # Generated demo output (created at repo root by README / demo script commands)
 predictions.json

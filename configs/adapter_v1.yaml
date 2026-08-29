@@ -1,0 +1,100 @@
+# Residual adapter experiment v1 (task #10). One config, one experiment, one
+# directory, one report: outputs/adapter_v1/.
+#
+# Frozen ConvNeXt-Tiny base (read-only outputs/multisource_blur_finetune/best.pt)
+# plus a zero-initialised residual MLP branch (768 -> 256 -> 1, ReLU) on the
+# head's pooled+normed features. final_logit = base_logit + 1.0 * residual.
+# Loss: BCE on CommunityForensics-Small only; GenImage/SID_Set receive only a
+# squared-residual penalty (no BCE, old-domain decisions stay untouched).
+seed: 2026
+device: auto
+
+data:
+  dataset_root: Dataset
+  # Audited replay manifest: CF/GenImage/SID 50/25/25, 1:1 within each class.
+  train_manifest: replay_balanced_560000.csv
+  val_manifest: validation_modern_combined_selection_12000.csv
+  image_size: 224
+  batch_size: 32
+  num_workers: 4
+  pin_memory: true
+  balanced_sampling: false
+  # Same four-family exposure + re-encode as the replay configs.
+  train_degradation_probability: 0.70
+  train_degradation_kind_weights:
+    jpeg: 1.0
+    blur: 1.0
+    scale: 1.0
+    noise: 1.0
+  train_blur_weights: [1.0, 1.0, 1.0]
+  train_reencode_probability: 0.15
+  max_train_samples: null
+  max_val_samples: null
+
+model:
+  # Must match the base checkpoint's architecture config exactly.
+  name: convnext_tiny
+  pretrained: false
+  dropout: 0.10
+  drop_path: 0.10
+
+warmstart:
+  # Base weights. READ-ONLY: never written back.
+  checkpoint: outputs/multisource_blur_finetune/best.pt
+
+adapter:
+  enabled: true
+  feature_dim: 768
+  hidden_dim: 256
+  residual_gain: 1.0
+
+adapter_training:
+  learning_rate: 0.0001
+  weight_decay: 0.01
+  gradient_clip: 1.0
+  # Squared-residual penalty weight on old-domain samples.
+  penalty_weight: 1.0
+  # Manifest `dataset` column routing for the mixed loss.
+  cf_source: CommunityForensics-Small
+  old_sources:
+    - GenImage
+    - SID_Set
+  # Stop once CF reaches the gate after an epoch; at most 2 epochs.
+  cf_target_robust_score: 0.9239
+  # Hard abort: old-domain per-source robust drop beyond this kills the run.
+  abort_max_source_drop: 0.010
+
+judgement:
+  # Gate baseline (pre-registered) + the stricter-than-pre-registered
+  # source-family bound adopted after the margin-flip lesson.
+  baseline_metrics: outputs/multisource_modern_finetune_v1/metrics_epoch_00.json
+  max_source_family_drop: 0.002
+
+training:
+  epochs: 2
+  accumulation_steps: 1
+  max_batches_per_epoch: null
+  max_val_batches: null
+
+validation:
+  conditions:
+    - clean
+    - jpeg_90
+    - jpeg_70
+    - jpeg_50
+    - jpeg_30
+    - blur_0.5
+    - blur_1.0
+    - blur_2.0
+    - scale_0.5
+    - scale_0.25
+    - noise_0.02
+    - noise_0.05
+    - noise_0.10
+    - color_-0.20
+    - color_0.20
+    - crop_0.80
+
+output:
+  directory: outputs/adapter_v1
+  save_epoch_checkpoints: true

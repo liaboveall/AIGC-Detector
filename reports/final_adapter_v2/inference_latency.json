@@ -1,0 +1,32 @@
+{
+  "device": "NVIDIA GeForce RTX 4080 Laptop GPU",
+  "baseline_checkpoint": "outputs/multisource_blur_finetune/best.pt",
+  "candidate_checkpoint": "outputs/adapter_v2/epoch_01.pt",
+  "warmup_rounds": 10,
+  "rounds": 40,
+  "protocol": "interleaved alternating-order paired timing, 20-forward bursts per round",
+  "baseline": {
+    "single": 4.942532000004574,
+    "batch_1": 4.975199000073189,
+    "batch_8": 9.445551749868175,
+    "batch_32": 38.929744500001114
+  },
+  "candidate": {
+    "single": 5.180956125004743,
+    "batch_1": 5.159432249984093,
+    "batch_8": 9.5411740000236,
+    "batch_32": 39.174386999984556
+  },
+  "adapter_parameter_counts": {
+    "base_frozen": 27820897,
+    "adapter_branch": 197121,
+    "trainable": 197121,
+    "total": 28018018
+  },
+  "relative_overhead": {
+    "single": 0.04823926784893815,
+    "batch_1": 0.03703032781365995,
+    "batch_8": 0.010123521916732957,
+    "batch_32": 0.006284205127095941
+  }
+}

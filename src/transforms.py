@@ -64,6 +64,14 @@ def _jpeg(image: Image.Image, quality: int) -> Image.Image:
         return decoded.convert("RGB").copy()
 
 
+def _webp(image: Image.Image, quality: int) -> Image.Image:
+    buffer = io.BytesIO()
+    image.save(buffer, format="WEBP", quality=quality)
+    buffer.seek(0)
+    with Image.open(buffer) as decoded:
+        return decoded.convert("RGB").copy()
+
+
 def _scale(image: Image.Image, factor: float) -> Image.Image:
     width, height = image.size
     small_size = (max(1, round(width * factor)), max(1, round(height * factor)))
@@ -110,7 +118,10 @@ def apply_degradation(
 
 
 class RandomDegradation:
-    KINDS = ("jpeg", "blur", "scale", "noise")
+    # Keep the original four-family defaults for backwards compatibility.  The
+    # two official families added later are opt-in through explicit weights.
+    LEGACY_KINDS = ("jpeg", "blur", "scale", "noise")
+    KINDS = LEGACY_KINDS + ("color", "crop")
     BLUR_VALUES = (0.5, 1.0, 2.0)
 
     def __init__(
@@ -125,8 +136,15 @@ class RandomDegradation:
         unknown_kinds = set(kind_weights or {}) - set(self.KINDS)
         if unknown_kinds:
             raise ValueError(f"Unknown degradation weight keys: {sorted(unknown_kinds)}")
+        configured_weights = kind_weights or {}
         self.kind_weights = [
-            float((kind_weights or {}).get(kind, 1.0)) for kind in self.KINDS
+            float(
+                configured_weights.get(
+                    kind,
+                    1.0 if kind in self.LEGACY_KINDS else 0.0,
+                )
+            )
+            for kind in self.KINDS
         ]
         if any(weight < 0 for weight in self.kind_weights) or sum(self.kind_weights) <= 0:
             raise ValueError("degradation kind weights must be non-negative with a positive sum")
@@ -136,23 +154,66 @@ class RandomDegradation:
         if any(weight < 0 for weight in self.blur_weights) or sum(self.blur_weights) <= 0:
             raise ValueError("blur weights must be non-negative with a positive sum")
 
-    def __call__(self, image: Image.Image) -> Image.Image:
+    def sample_degradation(self) -> Degradation:
         if random.random() >= self.probability:
-            return image
+            return Degradation("clean")
         kind = random.choices(self.KINDS, weights=self.kind_weights, k=1)[0]
         if kind == "jpeg":
-            degradation = Degradation(kind, random.choice((30, 50, 70, 90)))
-        elif kind == "blur":
-            degradation = Degradation(
+            return Degradation(kind, random.choice((30, 50, 70, 90)))
+        if kind == "blur":
+            return Degradation(
                 kind,
                 random.choices(self.BLUR_VALUES, weights=self.blur_weights, k=1)[0],
             )
-        elif kind == "scale":
-            degradation = Degradation(kind, random.choice((0.25, 0.5)))
-        else:
-            degradation = Degradation(kind, random.choice((0.02, 0.05, 0.10)))
+        if kind == "scale":
+            return Degradation(kind, random.choice((0.25, 0.5)))
+        if kind == "noise":
+            return Degradation(kind, random.choice((0.02, 0.05, 0.10)))
+        if kind == "color":
+            return Degradation(kind, random.choice((-0.20, 0.20)))
+        return Degradation("crop", 0.80)
+
+    def __call__(self, image: Image.Image) -> Image.Image:
+        degradation = self.sample_degradation()
+        if degradation.kind == "clean":
+            return image
         noise_seed = int(np.random.randint(0, 2**31 - 1))
         return apply_degradation(image, degradation, np.random.default_rng(noise_seed))
+
+
+class RandomLabelIndependentReencode:
+    """Apply a final random JPEG history independently of the class label.
+
+    This reduces, but cannot mathematically erase, source codec history (for
+    example an already-JPEG image is still recompressed).  It is therefore an
+    augmentation rather than a substitute for the compression-history audit.
+    """
+
+    def __init__(
+        self,
+        probability: float = 0.0,
+        qualities: list[int] | tuple[int, ...] = (50, 70, 90),
+        codecs: list[str] | tuple[str, ...] = ("jpeg", "webp"),
+    ) -> None:
+        if not 0.0 <= probability <= 1.0:
+            raise ValueError("reencode probability must be in [0, 1]")
+        if not qualities:
+            raise ValueError("reencode qualities must not be empty")
+        self.probability = float(probability)
+        self.qualities = tuple(int(quality) for quality in qualities)
+        if any(quality < 1 or quality > 100 for quality in self.qualities):
+            raise ValueError("reencode qualities must be in [1, 100]")
+        self.codecs = tuple(str(codec).strip().lower() for codec in codecs)
+        if not self.codecs or any(codec not in {"jpeg", "webp"} for codec in self.codecs):
+            raise ValueError("reencode codecs must contain only 'jpeg' and/or 'webp'")
+
+    def __call__(self, image: Image.Image) -> Image.Image:
+        if random.random() >= self.probability:
+            return image
+        quality = random.choice(self.qualities)
+        codec = random.choice(self.codecs)
+        image = image.convert("RGB")
+        return _jpeg(image, quality) if codec == "jpeg" else _webp(image, quality)
 
 
 class DeterministicDegradation:
@@ -170,6 +231,9 @@ def build_train_transform(
     degradation_probability: float,
     degradation_kind_weights: dict[str, float] | None = None,
     blur_weights: list[float] | tuple[float, ...] | None = None,
+    reencode_probability: float = 0.0,
+    reencode_qualities: list[int] | tuple[int, ...] = (50, 70, 90),
+    reencode_codecs: list[str] | tuple[str, ...] = ("jpeg", "webp"),
 ) -> T.Compose:
     return T.Compose(
         [
@@ -181,6 +245,11 @@ def build_train_transform(
             ),
             T.RandomHorizontalFlip(),
             T.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1),
+            RandomLabelIndependentReencode(
+                probability=reencode_probability,
+                qualities=reencode_qualities,
+                codecs=reencode_codecs,
+            ),
             RandomDegradation(
                 degradation_probability,
                 kind_weights=degradation_kind_weights,

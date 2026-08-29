@@ -1,0 +1,58 @@
+{
+  "release": "v1.0.0",
+  "checkpoint": "aigc-detector-adapter-v2.pt",
+  "sha256": "C5E0C7EC9E39B505A7269826F034969E53340D8CA2C74D60CC9B1868E43F44EC",
+  "selection_protocol": {
+    "images": 12000,
+    "conditions": 16,
+    "seed": 2026,
+    "role": "development_selection",
+    "robust_score": "0.8 * mean_degraded_auc + 0.2 * worst_degraded_auc"
+  },
+  "baseline": {
+    "robust_score": 0.930488,
+    "clean_auc": 0.965637,
+    "mean_degraded_auc": 0.939995,
+    "worst_degraded_auc": 0.892458,
+    "CommunityForensics-Small": 0.903910,
+    "GenImage": 0.920356,
+    "SID_Set": 0.958171
+  },
+  "adapter_v2": {
+    "robust_score": 0.942425,
+    "clean_auc": 0.973125,
+    "mean_degraded_auc": 0.950238,
+    "worst_degraded_auc": 0.911173,
+    "CommunityForensics-Small": 0.928369,
+    "GenImage": 0.919772,
+    "SID_Set": 0.957819
+  },
+  "delta": {
+    "robust_score": 0.011938,
+    "clean_auc": 0.007488,
+    "mean_degraded_auc": 0.010243,
+    "worst_degraded_auc": 0.018715,
+    "CommunityForensics-Small": 0.024459,
+    "GenImage": -0.000584,
+    "SID_Set": -0.000352
+  },
+  "binding_gate": {
+    "source_family_drop_limit": 0.005,
+    "checks_passed": 31,
+    "checks_total": 31,
+    "verdict": "ACCEPTED"
+  },
+  "non_binding_stress_test": {
+    "source_family_drop_limit": 0.002,
+    "checks_passed": 30,
+    "checks_total": 31,
+    "only_failure": "GenImage_noise_family_drop",
+    "value": 0.002583134814814869,
+    "excess": 0.000583134814814869
+  },
+  "confirmation": {
+    "images": 16000,
+    "status": "consumed_by_prior_model_soup_candidate",
+    "evaluated_on_adapter_v2": false
+  }
+}

@@ -1,0 +1,103 @@
+# Replay + distillation experiment v2 (task #6): the single pre-registered
+# directed retry of v1. One variable changed vs replay_distill_v1: stages 2-3
+# learning rate 5e-6 -> 2.5e-6 (intensity reduction). Everything else is
+# byte-identical in intent: same frozen structure, KD T=2.0 / lambda=1.0,
+# seed 2026, 560k replay manifest, reencode 0.15, 2 epochs, 16-condition eval.
+seed: 2026
+device: auto
+
+data:
+  dataset_root: Dataset
+  # Audited replay manifest: three sources 50/25/25, 1:1 within each class.
+  # Plain sampling on the ready-balanced manifest (no in-batch quota sampler).
+  train_manifest: replay_balanced_560000.csv
+  val_manifest: validation_modern_combined_selection_12000.csv
+  image_size: 224
+  batch_size: 32
+  num_workers: 4
+  pin_memory: true
+  balanced_sampling: false
+  # Reuse the stable four-family exposure from replay_only_v1.
+  train_degradation_probability: 0.70
+  train_degradation_kind_weights:
+    jpeg: 1.0
+    blur: 1.0
+    scale: 1.0
+    noise: 1.0
+  train_blur_weights: [1.0, 1.0, 1.0]
+  # Mitigate the format shortcut (JPEG-real vs PNG-fake correlation).
+  train_reencode_probability: 0.15
+  max_train_samples: null
+  max_val_samples: null
+
+model:
+  name: convnext_tiny
+  pretrained: false
+  dropout: 0.10
+  drop_path: 0.10
+
+warmstart:
+  # Student initialisation. Read-only: never written back.
+  checkpoint: outputs/multisource_blur_finetune/best.pt
+
+distillation:
+  # Teacher: same architecture, same weights, frozen, eval(), no_grad forward.
+  teacher_checkpoint: outputs/multisource_blur_finetune/best.pt
+  temperature: 2.0
+  kd_weight: 1.0
+  # Old-domain sources that receive the KD term (manifest `dataset` column).
+  kd_sources:
+    - GenImage
+    - SID_Set
+  # Frozen for the whole run; no dynamic unfreezing.
+  frozen_prefixes:
+    - stem.
+    - stages.0.
+    - stages.1.
+  head_learning_rate: 0.00002
+  # v1 -> v2 single-variable change: 0.000005 -> 0.0000025
+  stages_learning_rate: 0.0000025
+
+training:
+  epochs: 2
+  weight_decay: 0.05
+  warmup_epochs: 0
+  accumulation_steps: 1
+  gradient_clip: 1.0
+  max_batches_per_epoch: null
+  max_val_batches: null
+
+early_stop:
+  # Per-epoch guard: after each epoch's evaluation, abort (skip remaining
+  # epochs) if an old-domain per-source robust score dropped too far below the
+  # pre-registered baseline.
+  enabled: true
+  reference_metrics: outputs/multisource_modern_finetune_v1/metrics_epoch_00.json
+  sources:
+    - GenImage
+    - SID_Set
+  max_source_drop: 0.005
+
+validation:
+  conditions:
+    - clean
+    - jpeg_90
+    - jpeg_70
+    - jpeg_50
+    - jpeg_30
+    - blur_0.5
+    - blur_1.0
+    - blur_2.0
+    - scale_0.5
+    - scale_0.25
+    - noise_0.02
+    - noise_0.05
+    - noise_0.10
+    - color_-0.20
+    - color_0.20
+    - crop_0.80
+
+output:
+  directory: outputs/replay_distill_v2
+  tensorboard: true
+  save_epoch_checkpoints: true

@@ -1,0 +1,44 @@
+{
+  "checkpoint": "outputs/multisource_blur_finetune/best.pt",
+  "internal_manifest": "Dataset/manifests/validation_multisource.csv",
+  "sample_size": 3000,
+  "seed": 2026,
+  "device": "cuda",
+  "format_association": [
+    {
+      "split": "train",
+      "manifest": "Dataset/manifests/training_multisource.csv",
+      "rows": 482820,
+      "cramers_v_extension_vs_label": 1.0,
+      "jpeg_share_real": 1.0,
+      "jpeg_share_fake": 0.0,
+      "pil_probe_rows": 500,
+      "sampled_cramers_v_pil_format_vs_label": 0.7034013926370655,
+      "sampled_pil_jpeg_share_real": 1.0,
+      "sampled_pil_jpeg_share_fake": 0.29
+    },
+    {
+      "split": "validation",
+      "manifest": "Dataset/manifests/validation_multisource.csv",
+      "rows": 16000,
+      "cramers_v_extension_vs_label": 1.0,
+      "jpeg_share_real": 1.0,
+      "jpeg_share_fake": 0.0,
+      "pil_probe_rows": 500,
+      "sampled_cramers_v_pil_format_vs_label": 0.6806444271116836,
+      "sampled_pil_jpeg_share_real": 1.0,
+      "sampled_pil_jpeg_share_fake": 0.31666666666666665
+    }
+  ],
+  "overall_auc": {
+    "decoded": 0.9712518518518519,
+    "jpeg_q75": 0.9875131944444445,
+    "hash_random_reencode": 0.9624215277777777,
+    "neutralized_random_reencode": 0.955663425925926
+  },
+  "auc_delta_vs_decoded": {
+    "jpeg_q75": 0.016261342592592598,
+    "hash_random_reencode": -0.008830324074074247,
+    "neutralized_random_reencode": -0.015588425925925908
+  }
+}
