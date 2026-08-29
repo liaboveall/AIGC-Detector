@@ -6,11 +6,11 @@ from pathlib import Path
 
 import torch
 
+from src.adapter import build_checkpoint_model
 from src.config import dataset_paths, project_path
 from src.data import RobustnessImageDataset, make_loader
 from src.engine import evaluate_condition_suite
 from src.metrics import robustness_summary
-from src.model import create_model
 from src.transforms import EVAL_SUITES, build_eval_transform
 from src.utils import get_device, set_seed, write_json
 
@@ -40,8 +40,9 @@ def main() -> None:
     seed = int(config.get("seed", 2026))
     set_seed(seed)
     device = get_device(config.get("device", "auto"))
-    model = create_model(config["model"], pretrained_override=False)
-    model.load_state_dict(checkpoint["model_state"])
+    # Builds the bare base for legacy checkpoints (no adapter config) and
+    # the wrapped adapter model when the checkpoint config enables it.
+    model = build_checkpoint_model(config, checkpoint["model_state"])
     model.to(device)
     if device.type == "cuda":
         model.to(memory_format=torch.channels_last)

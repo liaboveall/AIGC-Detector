@@ -103,6 +103,9 @@ def main() -> None:
             float(data_config["train_degradation_probability"]),
             degradation_kind_weights=data_config.get("train_degradation_kind_weights"),
             blur_weights=data_config.get("train_blur_weights"),
+            reencode_probability=float(data_config.get("train_reencode_probability", 0.0)),
+            reencode_qualities=data_config.get("train_reencode_qualities", (50, 70, 90)),
+            reencode_codecs=data_config.get("train_reencode_codecs", ("jpeg", "webp")),
         ),
         training=True,
         max_samples=data_config.get("max_train_samples"),
@@ -140,6 +143,7 @@ def main() -> None:
     model = create_model(config["model"], pretrained_override=pretrained_override).to(device)
     initial_checkpoint = None
     initial_score = -math.inf
+    source_score = None
     if init_checkpoint_path is not None:
         initial_checkpoint = torch.load(init_checkpoint_path, map_location="cpu", weights_only=False)
         source_model_name = initial_checkpoint.get("config", {}).get("model", {}).get("name")
@@ -153,7 +157,7 @@ def main() -> None:
         source_score = source_robustness.get("robust_score")
         if source_score is not None and math.isfinite(float(source_score)):
             initial_score = float(source_score)
-        print(f"initialized_from={init_checkpoint_path} robust_score={initial_score:.4f}")
+        print(f"initialized_from={init_checkpoint_path} source_robust_score={initial_score:.4f}")
     if device.type == "cuda":
         model = model.to(memory_format=torch.channels_last)
     counts = parameter_counts(model)
@@ -161,6 +165,28 @@ def main() -> None:
     print(f"model={config['model']['name']} parameters={counts['total']:,} trainable={counts['trainable']:,}")
 
     criterion = torch.nn.BCEWithLogitsLoss()
+    initial_metrics = initial_checkpoint.get("metrics", {}) if initial_checkpoint else {}
+    if initial_checkpoint is not None and training_config.get("evaluate_init_checkpoint", False):
+        print(f"epoch=0 conditions={','.join(conditions)}")
+        initial_condition_metrics = evaluate_condition_suite(
+            model,
+            validation_loader,
+            criterion,
+            device,
+            conditions,
+            max_batches=max_val_batches,
+        )
+        initial_robustness = robustness_summary(initial_condition_metrics)
+        initial_score = float(initial_robustness["robust_score"])
+        initial_metrics = {
+            "epoch": 0,
+            "runtime": runtime,
+            "train": None,
+            "conditions": initial_condition_metrics,
+            "robustness": initial_robustness,
+        }
+        write_json(output_dir / "metrics_epoch_00.json", initial_metrics)
+        print(f"epoch=0 robust_score={initial_score:.4f}")
     optimizer = torch.optim.AdamW(
         model.parameters(),
         lr=float(training_config["learning_rate"]),
@@ -183,12 +209,14 @@ def main() -> None:
             "epoch": 0,
             "model_state": model.state_dict(),
             "config": {k: v for k, v in config.items() if not k.startswith("_")},
-            "metrics": initial_checkpoint.get("metrics", {}),
+            "metrics": initial_metrics,
             "parameter_counts": counts,
             "runtime": runtime,
             "initialized_from": str(init_checkpoint_path),
         }
         save_checkpoint(output_dir / "best.pt", initial_best)
+        if config["output"].get("save_epoch_checkpoints", False):
+            save_checkpoint(output_dir / "epoch_00.pt", initial_best)
 
     for epoch in range(1, epochs + 1):
         train_metrics = train_one_epoch(
@@ -247,6 +275,13 @@ def main() -> None:
             "runtime": runtime,
         }
         save_checkpoint(output_dir / "last.pt", checkpoint)
+        if config["output"].get("save_epoch_checkpoints", False):
+            epoch_checkpoint = {
+                key: value
+                for key, value in checkpoint.items()
+                if key not in {"optimizer_state", "scheduler_state"}
+            }
+            save_checkpoint(output_dir / f"epoch_{epoch:02d}.pt", epoch_checkpoint)
         if math.isfinite(score) and score > best_score:
             best_score = score
             # The best artifact is inference/evaluation ready and intentionally

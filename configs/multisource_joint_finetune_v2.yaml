@@ -1,0 +1,71 @@
+seed: 2026
+device: auto
+
+data:
+  dataset_root: Dataset
+  train_manifest: training_multisource.csv
+  val_manifest: validation_selection_6000.csv
+  image_size: 224
+  batch_size: 32
+  num_workers: 4
+  pin_memory: true
+  balanced_sampling: true
+  train_degradation_probability: 0.80
+  # Retry policy derived only from the internal 6k selection result:
+  # blur_2.0 = 20%, noise_0.10 = 6%, each color sign = 1.5%, crop = 3%.
+  train_degradation_kind_weights:
+    jpeg: 1.0
+    blur: 5.0
+    scale: 1.0
+    noise: 2.25
+    color: 0.375
+    crop: 0.375
+  train_blur_weights: [1.0, 2.0, 3.0]
+  # The first candidate showed that 35% was too aggressive. Retain the audit
+  # mitigation at a low exposure while preserving 85% without extra encoding.
+  train_reencode_probability: 0.15
+  train_reencode_codecs: [jpeg, webp]
+  train_reencode_qualities: [50, 65, 80, 95]
+  max_train_samples: null
+  max_val_samples: null
+
+model:
+  name: convnext_tiny
+  pretrained: false
+  dropout: 0.10
+  drop_path: 0.10
+
+training:
+  epochs: 2
+  learning_rate: 0.000015
+  weight_decay: 0.05
+  warmup_epochs: 0
+  accumulation_steps: 1
+  gradient_clip: 1.0
+  evaluate_init_checkpoint: true
+  max_batches_per_epoch: null
+  max_val_batches: null
+
+validation:
+  conditions:
+    - clean
+    - jpeg_90
+    - jpeg_70
+    - jpeg_50
+    - jpeg_30
+    - blur_0.5
+    - blur_1.0
+    - blur_2.0
+    - scale_0.5
+    - scale_0.25
+    - noise_0.02
+    - noise_0.05
+    - noise_0.10
+    - color_-0.20
+    - color_0.20
+    - crop_0.80
+
+output:
+  directory: outputs/multisource_joint_finetune_v2
+  tensorboard: true
+  save_epoch_checkpoints: true

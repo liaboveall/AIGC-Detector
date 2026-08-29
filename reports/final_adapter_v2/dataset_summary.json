@@ -1,0 +1,32 @@
+{
+  "communityforensics_small": {
+    "repository": "OwensLab/CommunityForensics-Small",
+    "revision": "6c539a534c07917307c381f5af4053c6091b5278",
+    "license": "CC-BY-NC-SA-4.0",
+    "downloaded_shards": 186,
+    "available_shards": 186,
+    "usable_images": 553531,
+    "real_images": 277969,
+    "fake_images": 275562,
+    "fake_generator_identities": 4780,
+    "excluded_exact_duplicates": 101,
+    "excluded_wildfake_overlaps": 24
+  },
+  "generator_split": {
+    "train": 3822,
+    "selection": 479,
+    "confirmation": 479,
+    "disjoint": true
+  },
+  "adapter_training_manifest": {
+    "rows": 560000,
+    "real": 280000,
+    "fake": 280000,
+    "CommunityForensics-Small": 280000,
+    "GenImage": 140000,
+    "SID_Set": 140000,
+    "sha_disjoint_from_selection": true,
+    "sha_disjoint_from_confirmation": true,
+    "generator_disjoint_from_validation": true
+  }
+}
