@@ -8,13 +8,14 @@ import torch
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 
+from src.adapter import build_checkpoint_model
 from src.config import project_path
-from src.model import create_model
 from src.transforms import build_eval_transform
 from src.utils import get_device, write_json
 
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff"}
+DEFAULT_CHECKPOINT = "weights/aigc-detector-adapter-v2.pt"
 
 
 class DirectoryDataset(Dataset[dict[str, Any]]):
@@ -47,26 +48,44 @@ class DirectoryDataset(Dataset[dict[str, Any]]):
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Predict AI-image probabilities for a directory")
-    parser.add_argument("--checkpoint", required=True)
+    parser.add_argument(
+        "--checkpoint",
+        default=DEFAULT_CHECKPOINT,
+        help=f"Checkpoint path (default: {DEFAULT_CHECKPOINT})",
+    )
     parser.add_argument("--input-dir", required=True)
-    parser.add_argument("--output", required=True)
+    parser.add_argument("--output", default="predictions.json")
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--num-workers", type=int, default=4)
+    parser.add_argument(
+        "--device",
+        default=None,
+        help="Optional device override such as cpu, cuda, or cuda:0 (default: checkpoint/auto)",
+    )
     return parser.parse_args()
 
 
 @torch.inference_mode()
 def main() -> None:
     args = parse_args()
-    checkpoint = torch.load(project_path(args.checkpoint), map_location="cpu", weights_only=False)
+    checkpoint_path = project_path(args.checkpoint)
+    if not checkpoint_path.is_file():
+        raise FileNotFoundError(
+            f"Checkpoint not found: {checkpoint_path}. Download the v1.0.0 Release asset "
+            f"to {project_path(DEFAULT_CHECKPOINT)} or pass --checkpoint explicitly."
+        )
+    checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
     config = checkpoint["config"]
-    device = get_device(config.get("device", "auto"))
-    model = create_model(config["model"], pretrained_override=False)
-    model.load_state_dict(checkpoint["model_state"])
+    device = get_device(args.device or config.get("device", "auto"))
+    # Legacy checkpoints (no adapter config) load as the bare base, exactly
+    # as before; adapter-enabled checkpoints build the wrapped model.
+    model = build_checkpoint_model(config, checkpoint["model_state"])
     model.to(device).eval()
     if device.type == "cuda":
         model.to(memory_format=torch.channels_last)
     input_dir = project_path(args.input_dir)
+    if not input_dir.is_dir():
+        raise NotADirectoryError(f"Input directory not found: {input_dir}")
     dataset = DirectoryDataset(input_dir, int(config["data"]["image_size"]))
     loader = DataLoader(
         dataset,
@@ -87,7 +106,10 @@ def main() -> None:
             value = float(probability) if bool(valid) else 0.5
             predictions.append({"image_path": image_path, "pred": min(max(value, 0.0), 1.0)})
     write_json(project_path(args.output), predictions)
-    print(f"wrote {len(predictions)} predictions to {project_path(args.output)}")
+    print(
+        f"wrote {len(predictions)} predictions to {project_path(args.output)} "
+        f"using {checkpoint_path.name} on {device}"
+    )
 
 
 if __name__ == "__main__":

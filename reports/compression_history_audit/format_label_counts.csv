@@ -1,0 +1,11 @@
+split,dataset,source_class,binary_label,extension,count
+train,GenImage,full_synthetic,1,png,140000
+train,GenImage,real,0,jpeg,140000
+train,SID_Set,full_synthetic,1,png,69941
+train,SID_Set,real,0,jpeg,70000
+train,SID_Set,tampered,1,png,62879
+validation,GenImage,full_synthetic,1,png,5000
+validation,GenImage,real,0,jpeg,5000
+validation,SID_Set,full_synthetic,1,png,2000
+validation,SID_Set,real,0,jpeg,2000
+validation,SID_Set,tampered,1,png,2000

@@ -26,6 +26,11 @@ Dataset/audit/*
 !Dataset/audit/build_dataset_manifests.py
 
 # Local working files
+tmp/
+.qoder/
+AIGC检测迭代方向规划_*.md
+reports/compression_history_audit/diagnostic_predictions.csv
+reports/compression_history_audit/diagnostic_sample_manifest.csv
 
 # Generated prediction output (created at repo root by README commands)
 predictions.json

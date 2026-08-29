@@ -1,7 +1,15 @@
+"""Replay + distillation training entry point (task #5).
+
+Student hot-starts from outputs/multisource_blur_finetune/best.pt with
+stem/stages.0/1 frozen; a frozen teacher copy of the same checkpoint provides
+temperature-scaled binary KD on old-domain samples (GenImage / SID_Set).
+All experiment artifacts go to outputs/replay_distill_v1/.
+"""
 from __future__ import annotations
 
 import argparse
 import csv
+import json
 import math
 from pathlib import Path
 from typing import Any
@@ -12,25 +20,38 @@ from torch.utils.tensorboard import SummaryWriter
 
 from src.config import dataset_paths, load_config, project_path
 from src.data import ManifestImageDataset, RobustnessImageDataset, make_loader
-from src.engine import evaluate_condition_suite, train_one_epoch
+from src.distill import (
+    build_param_groups,
+    freeze_prefixes,
+    group_parameter_counts,
+    load_teacher,
+    per_source_robust_scores,
+    train_one_epoch_distill,
+)
+from src.engine import evaluate_condition_suite
 from src.metrics import robustness_summary
-from src.model import create_model, parameter_counts
+from src.model import create_model
 from src.transforms import build_eval_transform, build_train_transform
 from src.utils import get_device, save_checkpoint, set_seed, write_json
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Train the robust AI-image baseline")
-    parser.add_argument("--config", default="configs/baseline_smoke.yaml")
+    parser = argparse.ArgumentParser(description="Replay + distillation training (task #5)")
+    parser.add_argument("--config", default="configs/replay_distill_v1.yaml")
     parser.add_argument("--epochs", type=int)
     parser.add_argument("--max-train-batches", type=int)
     parser.add_argument("--max-val-batches", type=int)
     parser.add_argument("--output-dir")
     parser.add_argument("--num-workers", type=int)
-    parser.add_argument("--no-pretrained", action="store_true")
     parser.add_argument(
-        "--init-checkpoint",
-        help="Initialise model weights from a checkpoint without restoring optimizer state",
+        "--check-teacher-grad",
+        action="store_true",
+        help="Smoke aid: verify all teacher gradients stay None after the first optimizer step",
+    )
+    parser.add_argument(
+        "--no-early-stop",
+        action="store_true",
+        help="Disable the per-epoch old-domain drop guard (smoke runs only)",
     )
     return parser.parse_args()
 
@@ -63,6 +84,13 @@ def append_history(path: Path, row: dict[str, Any]) -> None:
         writer.writerow(row)
 
 
+def load_reference_scores(early_stop_config: dict[str, Any]) -> dict[str, float]:
+    reference_path = project_path(early_stop_config["reference_metrics"])
+    with reference_path.open("r", encoding="utf-8") as handle:
+        payload = json.load(handle)
+    return per_source_robust_scores(payload["conditions"], list(early_stop_config["sources"]))
+
+
 def main() -> None:
     args = parse_args()
     config = load_config(args.config)
@@ -71,22 +99,28 @@ def main() -> None:
     device = get_device(config.get("device", "auto"))
     data_config = config["data"]
     training_config = config["training"]
+    distill_config = config["distillation"]
+    warmstart_config = config["warmstart"]
+    early_stop_config = config.get("early_stop", {})
     epochs = args.epochs or int(training_config["epochs"])
     max_train_batches = args.max_train_batches or training_config.get("max_batches_per_epoch")
     max_val_batches = args.max_val_batches or training_config.get("max_val_batches")
     output_dir = project_path(args.output_dir or config["output"]["directory"])
     output_dir.mkdir(parents=True, exist_ok=True)
-    init_checkpoint_path = project_path(args.init_checkpoint) if args.init_checkpoint else None
+    warmstart_path = project_path(warmstart_config["checkpoint"])
+    teacher_path = project_path(distill_config["teacher_checkpoint"])
+    early_stop_enabled = bool(early_stop_config.get("enabled", False)) and not args.no_early_stop
+    num_workers = int(data_config["num_workers"] if args.num_workers is None else args.num_workers)
     runtime = {
         "epochs": epochs,
         "max_train_batches": max_train_batches,
         "max_val_batches": max_val_batches,
-        "num_workers": int(data_config["num_workers"] if args.num_workers is None else args.num_workers),
-        "pretrained_override": False if args.no_pretrained or init_checkpoint_path else None,
-        "init_checkpoint": str(init_checkpoint_path) if init_checkpoint_path else None,
+        "num_workers": num_workers,
+        "warmstart_checkpoint": str(warmstart_path),
+        "teacher_checkpoint": str(teacher_path),
+        "early_stop_enabled": early_stop_enabled,
         "output_directory": str(output_dir),
     }
-    num_workers = int(data_config["num_workers"] if args.num_workers is None else args.num_workers)
     with (output_dir / "resolved_config.yaml").open("w", encoding="utf-8") as handle:
         resolved = {k: v for k, v in config.items() if not k.startswith("_")}
         resolved["runtime"] = runtime
@@ -139,57 +173,50 @@ def main() -> None:
         persistent_workers=True,
     )
 
-    pretrained_override = False if args.no_pretrained or init_checkpoint_path else None
-    model = create_model(config["model"], pretrained_override=pretrained_override).to(device)
-    initial_checkpoint = None
-    initial_score = -math.inf
-    source_score = None
-    if init_checkpoint_path is not None:
-        initial_checkpoint = torch.load(init_checkpoint_path, map_location="cpu", weights_only=False)
-        source_model_name = initial_checkpoint.get("config", {}).get("model", {}).get("name")
-        target_model_name = config["model"].get("name")
-        if source_model_name and source_model_name != target_model_name:
-            raise ValueError(
-                f"Checkpoint model {source_model_name!r} does not match config model {target_model_name!r}"
-            )
-        model.load_state_dict(initial_checkpoint["model_state"])
-        source_robustness = initial_checkpoint.get("metrics", {}).get("robustness", {})
-        source_score = source_robustness.get("robust_score")
-        if source_score is not None and math.isfinite(float(source_score)):
-            initial_score = float(source_score)
-        print(f"initialized_from={init_checkpoint_path} source_robust_score={initial_score:.4f}")
-    if device.type == "cuda":
-        model = model.to(memory_format=torch.channels_last)
-    counts = parameter_counts(model)
-    print(f"device={device} train={len(train_dataset)} val={len(validation_dataset)}")
-    print(f"model={config['model']['name']} parameters={counts['total']:,} trainable={counts['trainable']:,}")
-
-    criterion = torch.nn.BCEWithLogitsLoss()
-    initial_metrics = initial_checkpoint.get("metrics", {}) if initial_checkpoint else {}
-    if initial_checkpoint is not None and training_config.get("evaluate_init_checkpoint", False):
-        print(f"epoch=0 conditions={','.join(conditions)}")
-        initial_condition_metrics = evaluate_condition_suite(
-            model,
-            validation_loader,
-            criterion,
-            device,
-            conditions,
-            max_batches=max_val_batches,
+    # Student: hot-start from the warmstart checkpoint, then freeze shallow layers.
+    student = create_model(config["model"], pretrained_override=False)
+    warmstart = torch.load(warmstart_path, map_location="cpu", weights_only=False)
+    warmstart_model_name = warmstart.get("config", {}).get("model", {}).get("name")
+    if warmstart_model_name and warmstart_model_name != config["model"].get("name"):
+        raise ValueError(
+            f"Warmstart checkpoint model {warmstart_model_name!r} does not match "
+            f"config model {config['model'].get('name')!r}"
         )
-        initial_robustness = robustness_summary(initial_condition_metrics)
-        initial_score = float(initial_robustness["robust_score"])
-        initial_metrics = {
-            "epoch": 0,
-            "runtime": runtime,
-            "train": None,
-            "conditions": initial_condition_metrics,
-            "robustness": initial_robustness,
-        }
-        write_json(output_dir / "metrics_epoch_00.json", initial_metrics)
-        print(f"epoch=0 robust_score={initial_score:.4f}")
+    student.load_state_dict(warmstart["model_state"])
+    del warmstart
+    frozen_prefixes = list(distill_config.get("frozen_prefixes", ("stem.", "stages.0.", "stages.1.")))
+    frozen_count = freeze_prefixes(student, frozen_prefixes)
+    counts = group_parameter_counts(student)
+    if counts["frozen"] != frozen_count:
+        raise RuntimeError("Freeze bookkeeping mismatch")
+    student.to(device)
+    if device.type == "cuda":
+        student = student.to(memory_format=torch.channels_last)
+
+    # Teacher: frozen copy of the (same) checkpoint, eval, no_grad forward.
+    teacher = load_teacher(config["model"], teacher_path, device)
+
+    print(
+        f"student params: total={counts['total']:,} frozen={counts['frozen']:,} "
+        f"(stem+stages.0+stages.1) head={counts['head']:,} stages_2_3={counts['stages_2_3']:,} "
+        f"trainable={counts['trainable']:,}"
+    )
+    teacher_total = sum(p.numel() for p in teacher.parameters())
+    teacher_trainable = sum(p.numel() for p in teacher.parameters() if p.requires_grad)
+    print(f"teacher params: total={teacher_total:,} trainable={teacher_trainable:,} (must be 0)")
+    print(f"device={device} train={len(train_dataset)} val={len(validation_dataset)}")
+    print(f"frozen_prefixes={frozen_prefixes}")
+
+    parameter_groups = build_param_groups(
+        student,
+        head_learning_rate=float(distill_config["head_learning_rate"]),
+        stages_learning_rate=float(distill_config["stages_learning_rate"]),
+    )
+    for group in parameter_groups:
+        group_size = sum(p.numel() for p in group["params"])
+        print(f"param_group={group['name']} lr={group['lr']:.2e} params={group_size:,}")
     optimizer = torch.optim.AdamW(
-        model.parameters(),
-        lr=float(training_config["learning_rate"]),
+        parameter_groups,
         weight_decay=float(training_config["weight_decay"]),
     )
     accumulation_steps = int(training_config.get("accumulation_steps", 1))
@@ -203,24 +230,23 @@ def main() -> None:
     )
     scaler = torch.amp.GradScaler("cuda", enabled=device.type == "cuda")
     writer = SummaryWriter(output_dir / "tensorboard") if config["output"].get("tensorboard", True) else None
-    best_score = initial_score
-    if initial_checkpoint is not None:
-        initial_best = {
-            "epoch": 0,
-            "model_state": model.state_dict(),
-            "config": {k: v for k, v in config.items() if not k.startswith("_")},
-            "metrics": initial_metrics,
-            "parameter_counts": counts,
-            "runtime": runtime,
-            "initialized_from": str(init_checkpoint_path),
-        }
-        save_checkpoint(output_dir / "best.pt", initial_best)
-        if config["output"].get("save_epoch_checkpoints", False):
-            save_checkpoint(output_dir / "epoch_00.pt", initial_best)
+    criterion = torch.nn.BCEWithLogitsLoss()
+    temperature = float(distill_config["temperature"])
+    kd_weight = float(distill_config["kd_weight"])
+    kd_sources = list(distill_config["kd_sources"])
+    reference_scores = load_reference_scores(early_stop_config) if early_stop_enabled else None
+    if reference_scores is not None:
+        formatted = ", ".join(f"{source}={score:.6f}" for source, score in reference_scores.items())
+        print(f"early_stop_reference: {formatted} max_drop={early_stop_config['max_source_drop']}")
 
+    best_score = -math.inf
+    stopped_early = False
     for epoch in range(1, epochs + 1):
-        train_metrics = train_one_epoch(
-            model,
+        if device.type == "cuda":
+            torch.cuda.reset_peak_memory_stats(device)
+        train_metrics = train_one_epoch_distill(
+            student,
+            teacher,
             train_loader,
             optimizer,
             criterion,
@@ -229,11 +255,21 @@ def main() -> None:
             scheduler,
             accumulation_steps,
             float(training_config.get("gradient_clip", 1.0)),
+            temperature,
+            kd_weight,
+            kd_sources,
             max_batches=max_train_batches,
+            step_log_path=output_dir / f"train_steps_epoch_{epoch:02d}.csv",
+            check_teacher_grad=args.check_teacher_grad,
         )
+        peak_memory_bytes = (
+            int(torch.cuda.max_memory_allocated(device)) if device.type == "cuda" else None
+        )
+        if args.check_teacher_grad:
+            print(f"epoch={epoch} teacher_grad_all_none={train_metrics.get('teacher_grad_all_none')}")
         print(f"epoch={epoch} conditions={','.join(conditions)}")
         condition_metrics = evaluate_condition_suite(
-            model,
+            student,
             validation_loader,
             criterion,
             device,
@@ -249,11 +285,16 @@ def main() -> None:
             "train": train_metrics,
             "conditions": condition_metrics,
             "robustness": robustness,
+            "peak_gpu_memory_bytes": peak_memory_bytes,
         }
         write_json(output_dir / f"metrics_epoch_{epoch:02d}.json", epoch_result)
         history_row = {
             "epoch": epoch,
             "train_loss": train_metrics["loss"],
+            "bce": train_metrics["bce"],
+            "kd": train_metrics["kd"],
+            "kd_fraction": train_metrics["kd_fraction"],
+            "examples_per_second": train_metrics["examples_per_second"],
             "clean_auc": clean_auc,
             "mean_degraded_auc": robustness["mean_degraded_auc"],
             "worst_degraded_auc": robustness["worst_degraded_auc"],
@@ -266,7 +307,7 @@ def main() -> None:
                     writer.add_scalar(key, value, epoch)
         checkpoint = {
             "epoch": epoch,
-            "model_state": model.state_dict(),
+            "model_state": student.state_dict(),
             "optimizer_state": optimizer.state_dict(),
             "scheduler_state": scheduler.state_dict(),
             "config": {k: v for k, v in config.items() if not k.startswith("_")},
@@ -284,9 +325,6 @@ def main() -> None:
             save_checkpoint(output_dir / f"epoch_{epoch:02d}.pt", epoch_checkpoint)
         if math.isfinite(score) and score > best_score:
             best_score = score
-            # The best artifact is inference/evaluation ready and intentionally
-            # omits AdamW state, which is roughly twice the model size. `last.pt`
-            # retains the full optimizer state for future resume support.
             best_checkpoint = {
                 key: value
                 for key, value in checkpoint.items()
@@ -294,11 +332,48 @@ def main() -> None:
             }
             save_checkpoint(output_dir / "best.pt", best_checkpoint)
         print(
-            f"epoch={epoch} loss={train_metrics['loss']:.4f} clean_auc={clean_auc:.4f} "
-            f"robust_score={score:.4f} best={best_score:.4f}"
+            f"epoch={epoch} loss={train_metrics['loss']:.4f} bce={train_metrics['bce']:.4f} "
+            f"kd={train_metrics['kd']:.4f} kd_fraction={train_metrics['kd_fraction']:.3f} "
+            f"ex/s={train_metrics['examples_per_second']:.1f} "
+            f"clean_auc={clean_auc:.4f} robust_score={score:.4f} best={best_score:.4f}"
         )
+        # Per-epoch early stop: abort before the next epoch if an old-domain
+        # per-source robust score dropped too far below the baseline.
+        if early_stop_enabled and epoch < epochs:
+            current_scores = per_source_robust_scores(
+                condition_metrics, list(early_stop_config["sources"])
+            )
+            max_allowed_drop = float(early_stop_config["max_source_drop"])
+            drops = {
+                source: reference_scores[source] - current_scores[source]
+                for source in current_scores
+            }
+            violation = {
+                source: drop for source, drop in drops.items() if drop > max_allowed_drop
+            }
+            guard_payload = {
+                "epoch": epoch,
+                "reference": reference_scores,
+                "current": current_scores,
+                "drops": drops,
+                "max_allowed_drop": max_allowed_drop,
+                "violation": violation,
+                "triggered": bool(violation),
+            }
+            write_json(output_dir / f"early_stop_check_epoch_{epoch:02d}.json", guard_payload)
+            for source, drop in drops.items():
+                print(
+                    f"early_stop_check epoch={epoch} {source}: "
+                    f"current={current_scores[source]:.6f} reference={reference_scores[source]:.6f} "
+                    f"drop={drop:+.6f} limit={max_allowed_drop}"
+                )
+            if violation:
+                stopped_early = True
+                print(f"EARLY STOP after epoch {epoch}: {violation}")
+                break
     if writer is not None:
         writer.close()
+    print(f"done stopped_early={stopped_early} best={best_score:.4f}")
 
 
 if __name__ == "__main__":

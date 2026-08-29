@@ -1,11 +1,14 @@
-torch
-torchvision
-timm
-pandas
-scikit-learn
-Pillow
-PyYAML
-tqdm
-tensorboard
-datasets>=5.0
-pyarrow
+# Versions verified for the frozen v1.0.0 release on 2026-08-29.
+# Install the appropriate PyTorch CUDA/CPU wheel for your platform first if needed.
+torch==2.13.0
+torchvision==0.28.0
+timm==1.0.28
+numpy==2.5.2
+pandas==3.0.5
+scikit-learn==1.9.0
+Pillow==12.3.0
+PyYAML==6.0.3
+tqdm==4.70.0
+tensorboard==2.21.0
+datasets==5.0.1
+pyarrow==25.0.1
