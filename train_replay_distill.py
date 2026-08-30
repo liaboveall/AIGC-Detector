@@ -1,8 +1,9 @@
 """Replay + distillation training entry point (task #5).
 
-Student hot-starts from outputs/multisource_blur_finetune/best.pt with
-stem/stages.0/1 frozen; a frozen teacher copy of the same checkpoint provides
-temperature-scaled binary KD on old-domain samples (GenImage / SID_Set).
+Student either hot-starts from a same-architecture checkpoint or starts from
+the pretrained backbone named by the config, with stem/stages.0/1 frozen. A
+frozen teacher checkpoint provides temperature-scaled binary KD on selected
+sources; teacher and student architectures may differ.
 All experiment artifacts go to outputs/replay_distill_v1/.
 """
 from __future__ import annotations
@@ -107,7 +108,8 @@ def main() -> None:
     max_val_batches = args.max_val_batches or training_config.get("max_val_batches")
     output_dir = project_path(args.output_dir or config["output"]["directory"])
     output_dir.mkdir(parents=True, exist_ok=True)
-    warmstart_path = project_path(warmstart_config["checkpoint"])
+    warmstart_value = warmstart_config.get("checkpoint")
+    warmstart_path = project_path(warmstart_value) if warmstart_value else None
     teacher_path = project_path(distill_config["teacher_checkpoint"])
     early_stop_enabled = bool(early_stop_config.get("enabled", False)) and not args.no_early_stop
     num_workers = int(data_config["num_workers"] if args.num_workers is None else args.num_workers)
@@ -116,7 +118,7 @@ def main() -> None:
         "max_train_batches": max_train_batches,
         "max_val_batches": max_val_batches,
         "num_workers": num_workers,
-        "warmstart_checkpoint": str(warmstart_path),
+        "warmstart_checkpoint": str(warmstart_path) if warmstart_path else None,
         "teacher_checkpoint": str(teacher_path),
         "early_stop_enabled": early_stop_enabled,
         "output_directory": str(output_dir),
@@ -173,17 +175,23 @@ def main() -> None:
         persistent_workers=True,
     )
 
-    # Student: hot-start from the warmstart checkpoint, then freeze shallow layers.
-    student = create_model(config["model"], pretrained_override=False)
-    warmstart = torch.load(warmstart_path, map_location="cpu", weights_only=False)
-    warmstart_model_name = warmstart.get("config", {}).get("model", {}).get("name")
-    if warmstart_model_name and warmstart_model_name != config["model"].get("name"):
-        raise ValueError(
-            f"Warmstart checkpoint model {warmstart_model_name!r} does not match "
-            f"config model {config['model'].get('name')!r}"
-        )
-    student.load_state_dict(warmstart["model_state"])
-    del warmstart
+    # Student: either hot-start from a same-architecture checkpoint or use the
+    # pretrained backbone requested by the config, then freeze shallow layers.
+    if warmstart_path is not None:
+        student = create_model(config["model"], pretrained_override=False)
+        warmstart = torch.load(warmstart_path, map_location="cpu", weights_only=False)
+        warmstart_model_name = warmstart.get("config", {}).get("model", {}).get("name")
+        if warmstart_model_name and warmstart_model_name != config["model"].get("name"):
+            raise ValueError(
+                f"Warmstart checkpoint model {warmstart_model_name!r} does not match "
+                f"config model {config['model'].get('name')!r}"
+            )
+        student.load_state_dict(warmstart["model_state"])
+        del warmstart
+    else:
+        if not bool(config["model"].get("pretrained", False)):
+            raise ValueError("No warmstart checkpoint requires model.pretrained: true")
+        student = create_model(config["model"])
     frozen_prefixes = list(distill_config.get("frozen_prefixes", ("stem.", "stages.0.", "stages.1.")))
     frozen_count = freeze_prefixes(student, frozen_prefixes)
     counts = group_parameter_counts(student)
@@ -193,8 +201,9 @@ def main() -> None:
     if device.type == "cuda":
         student = student.to(memory_format=torch.channels_last)
 
-    # Teacher: frozen copy of the (same) checkpoint, eval, no_grad forward.
-    teacher = load_teacher(config["model"], teacher_path, device)
+    # Teacher: architecture comes from its own checkpoint and may differ from
+    # the student (for example Tiny teacher -> Base student).
+    teacher = load_teacher(teacher_path, device)
 
     print(
         f"student params: total={counts['total']:,} frozen={counts['frozen']:,} "
