@@ -19,7 +19,7 @@ Base recipe is therefore not continued.
 ## Mechanism
 
 The first Base-v2 experiment freezes Base v1 completely and adds a
-zero-initialised `1024 -> 256 -> 1` residual branch (262,401 trainable
+zero-initialised `1024 -> 256 -> 1` residual branch (262,657 trainable
 parameters). Source routing is deliberately the inverse of Tiny vNext:
 
 - GenImage/SID: supervised BCE plus Smooth-L1 matching to the frozen Tiny
