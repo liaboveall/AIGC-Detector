@@ -1,6 +1,6 @@
 # Tiny vNext preregistered optimization plan
 
-Status: completed and frozen on `codex/tiny-vnext` (2026-08-30). The selected
+Status: completed and frozen on `tiny-vnext` (2026-08-30). The selected
 checkpoint is seed 2026 at residual gain 1.60. The `v1.0.0` release and its
 checkpoint remain immutable rollback artifacts. See `TINY_VNEXT_RESULTS.md`.
 

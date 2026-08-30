@@ -8,7 +8,7 @@ color shifts, and cropping.
 plus a small residual adapter: **28,018,018 parameters**, threshold **0.209**, SHA-256
 `C5E0C7EC9E39B505A7269826F034969E53340D8CA2C74D60CC9B1868E43F44EC`.
 
-The separately protected Tiny vNext result on `codex/tiny-vnext` is documented
+The separately protected Tiny vNext result on `tiny-vnext` is documented
 in [`docs/TINY_VNEXT_RESULTS.md`](docs/TINY_VNEXT_RESULTS.md). It does not
 overwrite the `v1.0.0` rollback release.
 
