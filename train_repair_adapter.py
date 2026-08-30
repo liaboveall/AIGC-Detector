@@ -17,7 +17,13 @@ import torch
 import yaml
 from tqdm import tqdm
 
-from src.adapter import AdapterModel, adapter_parameter_counts, assert_zero_residual_identity
+from src.adapter import (
+    AdapterModel,
+    MultiScaleAdapterModel,
+    adapter_parameter_counts,
+    assert_zero_residual_identity,
+    build_adapter_model,
+)
 from src.config import dataset_paths, load_config, project_path
 from src.data import ManifestImageDataset, RobustnessImageDataset, make_loader
 from src.distill import load_teacher
@@ -53,7 +59,7 @@ def append_csv(path: Path, row: dict[str, Any]) -> None:
 
 
 def train_one_epoch(
-    model: AdapterModel,
+    model: AdapterModel | MultiScaleAdapterModel,
     teacher: torch.nn.Module,
     loader: Any,
     optimizer: torch.optim.Optimizer,
@@ -112,6 +118,7 @@ def train_one_epoch(
             distill_weight=float(repair_config["distill_weight"]),
             protect_weight=float(repair_config["protect_weight"]),
             temperature=float(repair_config.get("temperature", 1.0)),
+            distill_delta=float(repair_config.get("distill_delta", 1.0)),
         )
         scaler.scale(components["loss"]).backward()
         scaler.unscale_(optimizer)
@@ -265,12 +272,7 @@ def main() -> None:
     base = create_model(config["model"], pretrained_override=False)
     base.load_state_dict(warmstart["model_state"])
     del warmstart
-    model = AdapterModel(
-        base,
-        feature_dim=int(adapter_config["feature_dim"]),
-        hidden_dim=int(adapter_config["hidden_dim"]),
-        residual_gain=float(adapter_config.get("residual_gain", 1.0)),
-    )
+    model = build_adapter_model(base, adapter_config)
     teacher = load_teacher(teacher_path, device)
     model.to(device)
     if device.type == "cuda":
