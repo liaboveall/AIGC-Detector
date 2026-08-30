@@ -87,6 +87,16 @@ class BaselineTests(unittest.TestCase):
         self.assertEqual(counts["trainable"], 197_121)
         self.assertEqual(counts["total"], 28_018_018)
 
+    def test_adapter_residual_gain(self) -> None:
+        base = create_model({"name": "convnext_tiny", "pretrained": False, "drop_path": 0.0})
+        model = AdapterModel(base, feature_dim=768, hidden_dim=256, residual_gain=0.6)
+        with torch.no_grad():
+            model.adapter.net[-1].bias.fill_(1.0)
+        with torch.inference_mode():
+            final, base_logits, residual = model.forward_with_residual(torch.zeros(2, 3, 64, 64))
+        self.assertTrue(torch.allclose(residual, torch.ones_like(residual)))
+        self.assertTrue(torch.allclose(final - base_logits, torch.full_like(final, 0.6), atol=1e-6))
+
     def test_robustness_dataset(self) -> None:
         with TemporaryDirectory() as temporary:
             root = Path(temporary)

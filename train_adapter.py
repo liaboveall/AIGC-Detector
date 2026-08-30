@@ -3,8 +3,8 @@
 Frozen ConvNeXt-Tiny base (read-only outputs/multisource_blur_finetune/best.pt)
 plus a zero-initialised residual MLP branch; only the ~197k branch parameters
 train. Loss routing by manifest `dataset` column:
-  - CommunityForensics-Small -> BCE(final_logit, label)
-  - GenImage / SID_Set       -> penalty_weight * mean(residual_logit ** 2)
+  - configured adaptation sources -> BCE(final_logit, label)
+  - configured preservation sources -> penalty_weight * mean(residual_logit ** 2)
 
 Flow per run:
   epoch 00: save the untouched wrapper, evaluate the 16-condition selection
@@ -90,7 +90,7 @@ def train_one_epoch_adapter(
     device: torch.device,
     scaler: torch.amp.GradScaler,
     penalty_weight: float,
-    cf_source: str,
+    bce_sources: list[str],
     old_sources: list[str],
     gradient_clip: float,
     max_batches: int | None = None,
@@ -98,13 +98,17 @@ def train_one_epoch_adapter(
 ) -> dict[str, Any]:
     """One adapter epoch with the source-routed mixed loss."""
     model.train()
+    bce_source_set = set(bce_sources)
     old_source_set = set(old_sources)
+    overlap = bce_source_set & old_source_set
+    if overlap:
+        raise ValueError(f"BCE and preservation source lists overlap: {sorted(overlap)}")
     trainable_params = [p for p in model.parameters() if p.requires_grad]
     if not trainable_params:
         raise RuntimeError("No trainable parameters: adapter branch missing?")
     optimizer.zero_grad(set_to_none=True)
     total_loss = total_bce = total_pen = 0.0
-    total_examples = cf_examples = 0
+    total_examples = bce_examples = 0
     residual_stats: dict[str, dict[str, float]] = {}
     step_rows: list[dict[str, float]] = []
     started = time.perf_counter()
@@ -119,14 +123,18 @@ def train_one_epoch_adapter(
             images = images.contiguous(memory_format=torch.channels_last)
         labels = batch["label"].to(device, non_blocking=True)
         datasets = list(batch["dataset"])
-        cf_mask = torch.tensor([d == cf_source for d in datasets], dtype=torch.bool, device=device)
+        bce_mask = torch.tensor([d in bce_source_set for d in datasets], dtype=torch.bool, device=device)
         old_mask = torch.tensor([d in old_source_set for d in datasets], dtype=torch.bool, device=device)
+        if bool((~(bce_mask | old_mask)).any()):
+            routed_sources = bce_source_set | old_source_set
+            unrouted = sorted({name for name in datasets if name not in routed_sources})
+            raise ValueError(f"Training batch contains unrouted dataset sources: {unrouted}")
         with torch.autocast(device_type=device.type, dtype=torch.float16, enabled=amp_enabled):
             final_logits, _base_logits, residual_logits = model.forward_with_residual(images)
             final_logits = final_logits.flatten()
             residual_logits = residual_logits.flatten()
-            if bool(cf_mask.any()):
-                bce = F.binary_cross_entropy_with_logits(final_logits[cf_mask], labels[cf_mask])
+            if bool(bce_mask.any()):
+                bce = F.binary_cross_entropy_with_logits(final_logits[bce_mask], labels[bce_mask])
             else:
                 bce = final_logits.new_zeros(())
             if bool(old_mask.any()):
@@ -145,7 +153,7 @@ def train_one_epoch_adapter(
             optimizer.zero_grad(set_to_none=True)
         batch_size = labels.numel()
         total_examples += batch_size
-        cf_examples += int(cf_mask.sum())
+        bce_examples += int(bce_mask.sum())
         total_loss += float(loss.detach()) * batch_size
         total_bce += float(bce.detach()) * batch_size
         total_pen += float(penalty.detach()) * batch_size
@@ -171,7 +179,7 @@ def train_one_epoch_adapter(
                 "batch": batch_index,
                 "bce": float(bce.detach()),
                 "penalty": float(penalty.detach()),
-                "cf_fraction": int(cf_mask.sum()) / max(batch_size, 1),
+                "bce_fraction": int(bce_mask.sum()) / max(batch_size, 1),
                 "lr": float(optimizer.param_groups[0]["lr"]),
             }
         )
@@ -183,7 +191,7 @@ def train_one_epoch_adapter(
     if step_log_path is not None:
         step_log_path.parent.mkdir(parents=True, exist_ok=True)
         with step_log_path.open("w", newline="", encoding="utf-8") as handle:
-            writer = csv.DictWriter(handle, fieldnames=["batch", "bce", "penalty", "cf_fraction", "lr"])
+            writer = csv.DictWriter(handle, fieldnames=["batch", "bce", "penalty", "bce_fraction", "lr"])
             writer.writeheader()
             writer.writerows(step_rows)
     train_residual_summary = {
@@ -200,7 +208,7 @@ def train_one_epoch_adapter(
         "loss": total_loss / max(total_examples, 1),
         "bce": total_bce / max(total_examples, 1),
         "penalty": total_pen / max(total_examples, 1),
-        "cf_fraction": cf_examples / max(total_examples, 1),
+        "bce_fraction": bce_examples / max(total_examples, 1),
         "examples_per_second": total_examples / elapsed,
         "learning_rate": float(optimizer.param_groups[0]["lr"]),
         "residual_stats": train_residual_summary,
@@ -484,6 +492,7 @@ def main() -> None:
 
     # ---- Training epochs ----
     cf_source = str(adapter_train_config.get("cf_source", CF_SOURCE_DEFAULT))
+    bce_sources = list(adapter_train_config.get("bce_sources", [cf_source]))
     old_sources = list(adapter_train_config["old_sources"])
     penalty_weight = float(adapter_train_config["penalty_weight"])
     cf_target = float(adapter_train_config["cf_target_robust_score"])
@@ -510,7 +519,7 @@ def main() -> None:
             device,
             scaler,
             penalty_weight,
-            cf_source,
+            bce_sources,
             old_sources,
             gradient_clip,
             max_batches=max_train_batches,
