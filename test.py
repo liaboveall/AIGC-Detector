@@ -11,7 +11,12 @@ import pandas as pd
 import torch
 from PIL import Image
 
-from src.adapter import AdapterModel, adapter_parameter_counts
+from src.adapter import (
+    AdapterModel,
+    MultiScaleAdapterModel,
+    adapter_parameter_counts,
+    build_checkpoint_model,
+)
 from src.data import ManifestImageDataset, RobustnessImageDataset
 from src.model import create_model
 from src.repair import repair_loss_components, routing_masks
@@ -97,6 +102,63 @@ class BaselineTests(unittest.TestCase):
             final, base_logits, residual = model.forward_with_residual(torch.zeros(2, 3, 64, 64))
         self.assertTrue(torch.allclose(residual, torch.ones_like(residual)))
         self.assertTrue(torch.allclose(final - base_logits, torch.full_like(final, 0.6), atol=1e-6))
+
+    def test_multiscale_adapter_zero_identity_and_gain(self) -> None:
+        base = create_model({"name": "convnext_tiny", "pretrained": False, "drop_path": 0.0})
+        model = MultiScaleAdapterModel(
+            base,
+            stage_dims=(96, 192, 384, 768),
+            hidden_dim=64,
+            residual_gain=0.6,
+        )
+        images = torch.zeros(2, 3, 64, 64)
+        with torch.inference_mode():
+            bare = model.base(images)
+            wrapped = model(images)
+        self.assertTrue(torch.allclose(wrapped, bare, atol=1e-6, rtol=0.0))
+        with torch.no_grad():
+            model.adapter.net[-1].bias.fill_(1.0)
+        with torch.inference_mode():
+            final, base_logits, residual = model.forward_with_residual(images)
+        self.assertTrue(torch.allclose(residual, torch.ones_like(residual)))
+        self.assertTrue(torch.allclose(final - base_logits, torch.full_like(final, 0.6), atol=1e-6))
+        counts = adapter_parameter_counts(model)
+        self.assertEqual(counts["trainable"], counts["adapter_branch"])
+        self.assertTrue(all(parameter.grad is None for parameter in model.base.parameters()))
+
+    def test_multiscale_checkpoint_round_trip(self) -> None:
+        config = {
+            "model": {
+                "name": "convnext_tiny",
+                "pretrained": False,
+                "dropout": 0.0,
+                "drop_path": 0.0,
+            },
+            "adapter": {
+                "enabled": True,
+                "kind": "multiscale_stats",
+                "stage_dims": [96, 192, 384, 768],
+                "hidden_dim": 32,
+                "residual_gain": 1.25,
+                "dropout": 0.0,
+            },
+        }
+        base = create_model(config["model"], pretrained_override=False)
+        original = MultiScaleAdapterModel(
+            base,
+            stage_dims=(96, 192, 384, 768),
+            hidden_dim=32,
+            residual_gain=1.25,
+        ).eval()
+        with torch.no_grad():
+            original.adapter.net[-1].bias.fill_(0.25)
+        restored = build_checkpoint_model(config, original.state_dict()).eval()
+        images = torch.zeros(1, 3, 64, 64)
+        with torch.inference_mode():
+            expected = original(images)
+            actual = restored(images)
+        self.assertIsInstance(restored, MultiScaleAdapterModel)
+        self.assertTrue(torch.equal(actual, expected))
 
     def test_robustness_dataset(self) -> None:
         with TemporaryDirectory() as temporary:
