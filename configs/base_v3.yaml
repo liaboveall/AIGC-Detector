@@ -1,0 +1,96 @@
+# Preregistered Base v3 controlled restart. See docs/BASE_V3_PREREGISTRATION.md.
+seed: 2026
+device: auto
+
+data:
+  dataset_root: Dataset
+  train_manifest: tiny_vnext_train_balanced_280000.csv
+  val_manifest: validation_modern_combined_selection_12000.csv
+  image_size: 224
+  batch_size: 8
+  num_workers: 4
+  pin_memory: true
+  train_degradation_probability: 0.80
+  train_degradation_kind_weights:
+    jpeg: 12.0
+    blur: 24.0
+    scale: 10.0
+    noise: 18.0
+    color: 8.0
+    crop: 8.0
+  train_blur_weights: [4.0, 6.0, 14.0]
+  train_reencode_probability: 0.35
+  train_reencode_qualities: [50, 70, 90]
+  train_reencode_codecs: [jpeg, webp]
+  max_train_samples: null
+  max_val_samples: null
+
+model:
+  name: convnext_base.fb_in22k_ft_in1k
+  pretrained: true
+  dropout: 0.10
+  drop_path: 0.10
+
+teacher:
+  checkpoint: outputs/tiny_vnext/final_candidate/tiny_vnext_seed2026_gain1p60.pt
+  feature_dim: 768
+
+distillation:
+  logit_weight: 0.75
+  logit_delta: 2.0
+  feature_weight: 0.10
+  projection_learning_rate: 0.0001
+
+training:
+  accumulation_steps: 4
+  gradient_clip: 1.0
+  weight_decay: 0.05
+  warmup_ratio: 0.05
+  max_batches_per_epoch: null
+  max_val_batches: null
+  divergence_max_source_drop: 0.05
+  reference_metrics: outputs/tiny_vnext/historical_gain_sweep/candidate_gain_1p60.json
+  phases:
+    - name: phase_a_deep_warmup
+      epochs: 1
+      active_prefixes: [stages.3., head.]
+      feature_weight: 0.0
+    - name: phase_b_forensic_adaptation
+      epochs: 2
+      active_prefixes: [stages.2., stages.3., head.]
+      feature_weight: 0.10
+    - name: phase_c_layerwise_unfreeze
+      epochs: 1
+      active_prefixes: [stem., stages.0., stages.1., stages.2., stages.3., head.]
+      feature_weight: 0.10
+  learning_rates:
+    stem.: 0.0000005
+    stages.0.: 0.0000005
+    stages.1.: 0.000001
+    stages.2.: 0.000003
+    stages.3.: 0.00001
+    head.: 0.0001
+
+validation:
+  conditions:
+    - clean
+    - jpeg_90
+    - jpeg_70
+    - jpeg_50
+    - jpeg_30
+    - blur_0.5
+    - blur_1.0
+    - blur_2.0
+    - scale_0.5
+    - scale_0.25
+    - noise_0.02
+    - noise_0.05
+    - noise_0.10
+    - color_-0.20
+    - color_0.20
+    - crop_0.80
+
+output:
+  directory: outputs/base_v3/seed2026
+  tensorboard: true
+
