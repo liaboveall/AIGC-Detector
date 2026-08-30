@@ -1,6 +1,6 @@
 # Tiny vNext frozen result
 
-Frozen: 2026-08-30 on `codex/tiny-vnext`.
+Frozen: 2026-08-30 on `tiny-vnext`.
 
 ## Decision
 
