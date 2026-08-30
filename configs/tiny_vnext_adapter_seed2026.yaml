@@ -1,0 +1,94 @@
+# Tiny vNext primary frozen-backbone adapter experiment.
+seed: 2026
+device: auto
+
+data:
+  dataset_root: Dataset
+  train_manifest: tiny_vnext_train_balanced_280000.csv
+  # Historical selection is used only as a regression anchor during training.
+  # Fresh modern development manifests are evaluated separately after the run.
+  val_manifest: validation_modern_combined_selection_12000.csv
+  image_size: 224
+  batch_size: 32
+  num_workers: 4
+  pin_memory: true
+  balanced_sampling: false
+  # Exact exposure targets: clean 20 / jpeg 12 / blur 24 / scale 10 /
+  # noise 18 / color 8 / crop 8 percent.
+  train_degradation_probability: 0.80
+  train_degradation_kind_weights:
+    jpeg: 12.0
+    blur: 24.0
+    scale: 10.0
+    noise: 18.0
+    color: 8.0
+    crop: 8.0
+  # Within the 24% blur family: 4% radius .5, 6% radius 1, 14% radius 2.
+  train_blur_weights: [4.0, 6.0, 14.0]
+  train_reencode_probability: 0.15
+  max_train_samples: null
+  max_val_samples: null
+
+model:
+  name: convnext_tiny
+  pretrained: false
+  dropout: 0.10
+  drop_path: 0.10
+
+warmstart:
+  checkpoint: outputs/multisource_blur_finetune/best.pt
+
+adapter:
+  enabled: true
+  feature_dim: 768
+  hidden_dim: 256
+  residual_gain: 1.0
+
+adapter_training:
+  learning_rate: 0.0001
+  weight_decay: 0.01
+  gradient_clip: 1.0
+  penalty_weight: 3.0
+  cf_source: CommunityForensics-Small
+  bce_sources:
+    - CommunityForensics-Small
+    - SuSy
+    - MS-COCOAI
+  old_sources:
+    - GenImage
+    - SID_Set
+  cf_target_robust_score: 0.9239
+  abort_max_source_drop: 0.005
+
+judgement:
+  baseline_metrics: outputs/multisource_modern_finetune_v1/metrics_epoch_00.json
+  max_source_family_drop: 0.003
+
+training:
+  epochs: 1
+  accumulation_steps: 1
+  max_batches_per_epoch: null
+  max_val_batches: null
+
+validation:
+  conditions:
+    - clean
+    - jpeg_90
+    - jpeg_70
+    - jpeg_50
+    - jpeg_30
+    - blur_0.5
+    - blur_1.0
+    - blur_2.0
+    - scale_0.5
+    - scale_0.25
+    - noise_0.02
+    - noise_0.05
+    - noise_0.10
+    - color_-0.20
+    - color_0.20
+    - crop_0.80
+
+output:
+  directory: outputs/tiny_vnext/adapter_single_scale_seed2026
+  save_epoch_checkpoints: true
