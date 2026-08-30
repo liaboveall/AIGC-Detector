@@ -14,6 +14,7 @@ from PIL import Image
 from src.adapter import AdapterModel, adapter_parameter_counts
 from src.data import ManifestImageDataset, RobustnessImageDataset
 from src.model import create_model
+from src.repair import repair_loss_components, routing_masks
 from src.transforms import RandomDegradation, RandomLabelIndependentReencode, build_eval_transform
 
 
@@ -175,6 +176,39 @@ class BaselineTests(unittest.TestCase):
         reencoded = transform(image)
         self.assertEqual(reencoded.mode, "RGB")
         self.assertFalse(np.array_equal(np.asarray(image), np.asarray(reencoded)))
+
+    def test_repair_loss_routes_gradients(self) -> None:
+        final = torch.tensor([0.2, -0.4, 0.7, -0.1], requires_grad=True)
+        residual = torch.tensor([0.3, -0.2, 0.5, -0.6], requires_grad=True)
+        labels = torch.tensor([1.0, 0.0, 1.0, 0.0])
+        repair = torch.tensor([True, True, False, False])
+        protect = ~repair
+        teacher = torch.tensor([0.8, -1.0])
+        components = repair_loss_components(
+            final,
+            residual,
+            labels,
+            teacher,
+            repair,
+            protect,
+            bce_weight=0.5,
+            distill_weight=1.0,
+            protect_weight=3.0,
+        )
+        components["loss"].backward()
+        self.assertGreater(float(final.grad[:2].abs().sum()), 0.0)
+        self.assertEqual(float(final.grad[2:].abs().sum()), 0.0)
+        self.assertEqual(float(residual.grad[:2].abs().sum()), 0.0)
+        self.assertGreater(float(residual.grad[2:].abs().sum()), 0.0)
+
+    def test_repair_routing_rejects_unknown_source(self) -> None:
+        with self.assertRaisesRegex(ValueError, "unrouted"):
+            routing_masks(
+                ["GenImage", "unknown"],
+                {"GenImage", "SID_Set"},
+                {"CommunityForensics-Small"},
+                torch.device("cpu"),
+            )
 
 
 if __name__ == "__main__":
