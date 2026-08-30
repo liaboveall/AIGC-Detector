@@ -30,6 +30,7 @@ def repair_loss_components(
     distill_weight: float,
     protect_weight: float,
     temperature: float = 1.0,
+    distill_delta: float = 1.0,
 ) -> dict[str, torch.Tensor]:
     """Return the source-routed repair objective and its components.
 
@@ -61,6 +62,8 @@ def repair_loss_components(
         )
     if temperature <= 0:
         raise ValueError("temperature must be positive")
+    if distill_delta <= 0:
+        raise ValueError("distill_delta must be positive")
     for name, value in {
         "bce_weight": bce_weight,
         "distill_weight": distill_weight,
@@ -74,7 +77,11 @@ def repair_loss_components(
         repair_final = final_logits[repair_mask].float()
         teacher = teacher_repair_logits.detach().float()
         bce = F.binary_cross_entropy_with_logits(repair_final, labels[repair_mask].float())
-        distill = F.smooth_l1_loss(repair_final / temperature, teacher / temperature)
+        distill = F.huber_loss(
+            repair_final / temperature,
+            teacher / temperature,
+            delta=distill_delta,
+        )
         distill = distill * (temperature**2)
         teacher_mae = (repair_final.detach() - teacher).abs().mean()
     else:
