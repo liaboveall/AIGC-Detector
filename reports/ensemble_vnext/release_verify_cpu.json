@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "checkpoint": "weights/aigc-detector-ensemble-vnext.pt",
+  "sha256": "B3A2002C6C297D6382D88B0BA83C4059CE75BBA01C14049A26D3CF45D074DC4B",
+  "device": "cpu",
+  "alpha": 0.5,
+  "source_sha256": {
+    "model_a": "6E05001FBB7EADB2343ECC5B8B393FA5285832F277C0AA8357E84AB11610CBB3",
+    "model_b": "F49D423847B26F26FAF4C2558F1A831658F0F92DF22F37F56B3E33BA51264DD5"
+  },
+  "parameter_count": {
+    "model_a": 28018018,
+    "model_b": 87567489,
+    "trainable": 0,
+    "total": 115585507
+  },
+  "predictions": 3,
+  "deterministic_repeated_inference": true,
+  "unreadable_fallback": 0.5
+}

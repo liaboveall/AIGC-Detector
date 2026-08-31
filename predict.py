@@ -15,7 +15,7 @@ from src.utils import get_device, write_json
 
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff"}
-DEFAULT_CHECKPOINT = "weights/aigc-detector-adapter-v2.pt"
+DEFAULT_CHECKPOINT = "weights/aigc-detector-ensemble-vnext.pt"
 
 
 class DirectoryDataset(Dataset[dict[str, Any]]):
@@ -71,14 +71,13 @@ def main() -> None:
     checkpoint_path = project_path(args.checkpoint)
     if not checkpoint_path.is_file():
         raise FileNotFoundError(
-            f"Checkpoint not found: {checkpoint_path}. Download the v1.0.0 Release asset "
-            f"to {project_path(DEFAULT_CHECKPOINT)} or pass --checkpoint explicitly."
+            f"Checkpoint not found: {checkpoint_path}. Restore the Git LFS asset with "
+            f"'git lfs pull' or pass --checkpoint explicitly."
         )
     checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
     config = checkpoint["config"]
     device = get_device(args.device or config.get("device", "auto"))
-    # Legacy checkpoints (no adapter config) load as the bare base, exactly
-    # as before; adapter-enabled checkpoints build the wrapped model.
+    # The shared loader dispatches legacy, adapter, and fixed-ensemble schemas.
     model = build_checkpoint_model(config, checkpoint["model_state"])
     model.to(device).eval()
     if device.type == "cuda":

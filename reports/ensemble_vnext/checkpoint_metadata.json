@@ -1,0 +1,13 @@
+{
+  "checkpoint": "weights/aigc-detector-ensemble-vnext.pt",
+  "sha256": "b3a2002c6c297d6382d88b0ba83c4059ce75bba01c14049a26d3cf45d074dc4b",
+  "kind": "fixed_weight_logit_ensemble",
+  "alpha": 0.5,
+  "model_a_source": "outputs/tiny_vnext/final_candidate/tiny_vnext_seed2026_gain1p60.pt",
+  "model_a_sha256": "6e05001fbb7eadb2343ecc5b8b393fa5285832f277c0aa8357e84ab11610cbb3",
+  "model_a_parameters": 28018018,
+  "model_b_source": "outputs/base_v1/primary/best.pt",
+  "model_b_sha256": "f49d423847b26f26faf4c2558f1a831658f0f92df22f37f56b3e33ba51264dd5",
+  "model_b_parameters": 87567489,
+  "total_parameters": 115585507
+}
