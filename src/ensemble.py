@@ -87,8 +87,12 @@ class EnsembleModel(torch.nn.Module):
         return self
 
     def forward(self, images: torch.Tensor) -> torch.Tensor:
-        logits_a = self.model_a(images).flatten()
-        logits_b = self.model_b(images).flatten()
+        # Promote member logits before arithmetic. Under CUDA autocast the
+        # backbones emit float16 values; blending those values in float16 makes
+        # the packaged path differ from the direct sweep, which intentionally
+        # blends in float32 after both forward passes.
+        logits_a = self.model_a(images).flatten().float()
+        logits_b = self.model_b(images).flatten().float()
         blended = (1.0 - self.alpha) * logits_a + self.alpha * logits_b
         return blended.unsqueeze(-1)
 

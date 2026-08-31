@@ -40,8 +40,7 @@ def main() -> None:
     seed = int(config.get("seed", 2026))
     set_seed(seed)
     device = get_device(config.get("device", "auto"))
-    # Builds the bare base for legacy checkpoints (no adapter config) and
-    # the wrapped adapter model when the checkpoint config enables it.
+    # The shared loader dispatches legacy, adapter, and fixed-ensemble schemas.
     model = build_checkpoint_model(config, checkpoint["model_state"])
     model.to(device)
     if device.type == "cuda":
