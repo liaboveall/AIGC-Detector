@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from copy import deepcopy
 import csv
 from pathlib import Path
 
@@ -18,6 +19,11 @@ from src.utils import get_device, set_seed, write_json
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Evaluate a checkpoint under deterministic degradations")
     parser.add_argument("--checkpoint", required=True)
+    parser.add_argument(
+        "--residual-gain",
+        type=float,
+        help="Evaluation-only override for adapter.residual_gain; checkpoint weights are unchanged",
+    )
     parser.add_argument("--manifest", default=None)
     parser.add_argument("--suite", choices=sorted(EVAL_SUITES), default="full")
     parser.add_argument(
@@ -36,7 +42,14 @@ def main() -> None:
     args = parse_args()
     checkpoint_path = project_path(args.checkpoint)
     checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
-    config = checkpoint["config"]
+    config = deepcopy(checkpoint["config"])
+    if args.residual_gain is not None:
+        adapter_config = config.get("adapter", {})
+        if not adapter_config.get("enabled", False):
+            raise ValueError("--residual-gain requires an adapter-enabled checkpoint")
+        if not 0.0 <= args.residual_gain <= 2.0:
+            raise ValueError("--residual-gain must be within [0, 2]")
+        adapter_config["residual_gain"] = float(args.residual_gain)
     seed = int(config.get("seed", 2026))
     set_seed(seed)
     device = get_device(config.get("device", "auto"))
@@ -92,6 +105,7 @@ def main() -> None:
     )
     payload = {
         "checkpoint": str(checkpoint_path),
+        "residual_gain_override": args.residual_gain,
         "manifest": str(manifest_path),
         "suite": suite_name,
         "conditions": results,

@@ -11,10 +11,23 @@ import pandas as pd
 import torch
 from PIL import Image
 
-from src.adapter import AdapterModel, adapter_parameter_counts, build_checkpoint_model
+from src.adapter import (
+    AdapterModel,
+    MultiScaleAdapterModel,
+    adapter_parameter_counts,
+    build_checkpoint_model,
+)
+from src.base_v3 import (
+    BaseV3QuotaBatchSampler,
+    build_phase_param_groups,
+    model_logits_and_features,
+    quota_signature,
+    set_phase_trainability,
+)
 from src.data import ManifestImageDataset, RobustnessImageDataset
 from src.ensemble import EnsembleModel, build_ensemble_model, ensemble_parameter_counts
 from src.model import create_model
+from src.repair import repair_loss_components, routing_masks
 from src.transforms import RandomDegradation, RandomLabelIndependentReencode, build_eval_transform
 
 
@@ -175,6 +188,145 @@ class BaselineTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "model_state is missing"):
             build_ensemble_model(checkpoint["config"]["ensemble"], {"model_a": base_a.state_dict()})
+    def test_base_v3_quota_sampler_contract(self) -> None:
+        rows = []
+        for dataset in ("CommunityForensics-Small", "GenImage", "SID_Set"):
+            for label in (0, 1):
+                for index in range(4):
+                    rows.append(
+                        {
+                            "dataset": dataset,
+                            "binary_label": label,
+                            "source_class": "real" if label == 0 else "fake",
+                            "generator": "",
+                        }
+                    )
+        for index in range(4):
+            rows.append(
+                {
+                    "dataset": "SuSy",
+                    "binary_label": 0,
+                    "source_class": "real",
+                    "generator": "",
+                }
+            )
+        for generator in ("modern_a", "modern_b"):
+            for _ in range(2):
+                rows.append(
+                    {
+                        "dataset": "MS-COCOAI",
+                        "binary_label": 1,
+                        "source_class": generator,
+                        "generator": generator,
+                    }
+                )
+        frame = pd.DataFrame(rows)
+        sampler = BaseV3QuotaBatchSampler(frame, seed=2026)
+        self.assertEqual(len(sampler), 4)
+        batches = list(sampler)
+        self.assertEqual(len({index for batch in batches for index in batch}), 32)
+        for indices in batches:
+            batch_frame = frame.iloc[indices]
+            batch = {
+                "dataset": batch_frame["dataset"].tolist(),
+                "label": torch.tensor(batch_frame["binary_label"].tolist()),
+            }
+            signature = quota_signature(batch)
+            self.assertEqual(len(indices), 8)
+            self.assertTrue(all(value == 1 for value in signature.values()))
+            self.assertEqual(len(signature), 8)
+
+    def test_base_v3_phase_groups_cover_trainable_parameters(self) -> None:
+        model = create_model({"name": "convnext_tiny", "pretrained": False, "drop_path": 0.0})
+        projection = torch.nn.Linear(768, 32, bias=False)
+        set_phase_trainability(model, ("stages.3.", "head."))
+        groups = build_phase_param_groups(
+            model,
+            projection,
+            {"stages.3.": 1e-5, "head.": 1e-4},
+            projection_learning_rate=1e-4,
+        )
+        self.assertEqual({group["name"] for group in groups}, {"stages.3", "head", "feature_projection"})
+        assigned = sum(sum(parameter.numel() for parameter in group["params"]) for group in groups)
+        expected = sum(parameter.numel() for parameter in model.parameters() if parameter.requires_grad)
+        expected += sum(parameter.numel() for parameter in projection.parameters())
+        self.assertEqual(assigned, expected)
+
+    def test_base_v3_logits_and_features_match_bare_model(self) -> None:
+        model = create_model({"name": "convnext_tiny", "pretrained": False, "drop_path": 0.0}).eval()
+        images = torch.zeros(2, 3, 64, 64)
+        with torch.inference_mode():
+            expected = model(images).flatten()
+            logits, features = model_logits_and_features(model, images)
+        self.assertTrue(torch.equal(logits, expected))
+        self.assertEqual(tuple(features.shape), (2, 768))
+
+    def test_adapter_residual_gain(self) -> None:
+        base = create_model({"name": "convnext_tiny", "pretrained": False, "drop_path": 0.0})
+        model = AdapterModel(base, feature_dim=768, hidden_dim=256, residual_gain=0.6)
+        with torch.no_grad():
+            model.adapter.net[-1].bias.fill_(1.0)
+        with torch.inference_mode():
+            final, base_logits, residual = model.forward_with_residual(torch.zeros(2, 3, 64, 64))
+        self.assertTrue(torch.allclose(residual, torch.ones_like(residual)))
+        self.assertTrue(torch.allclose(final - base_logits, torch.full_like(final, 0.6), atol=1e-6))
+
+    def test_multiscale_adapter_zero_identity_and_gain(self) -> None:
+        base = create_model({"name": "convnext_tiny", "pretrained": False, "drop_path": 0.0})
+        model = MultiScaleAdapterModel(
+            base,
+            stage_dims=(96, 192, 384, 768),
+            hidden_dim=64,
+            residual_gain=0.6,
+        )
+        images = torch.zeros(2, 3, 64, 64)
+        with torch.inference_mode():
+            bare = model.base(images)
+            wrapped = model(images)
+        self.assertTrue(torch.allclose(wrapped, bare, atol=1e-6, rtol=0.0))
+        with torch.no_grad():
+            model.adapter.net[-1].bias.fill_(1.0)
+        with torch.inference_mode():
+            final, base_logits, residual = model.forward_with_residual(images)
+        self.assertTrue(torch.allclose(residual, torch.ones_like(residual)))
+        self.assertTrue(torch.allclose(final - base_logits, torch.full_like(final, 0.6), atol=1e-6))
+        counts = adapter_parameter_counts(model)
+        self.assertEqual(counts["trainable"], counts["adapter_branch"])
+        self.assertTrue(all(parameter.grad is None for parameter in model.base.parameters()))
+
+    def test_multiscale_checkpoint_round_trip(self) -> None:
+        config = {
+            "model": {
+                "name": "convnext_tiny",
+                "pretrained": False,
+                "dropout": 0.0,
+                "drop_path": 0.0,
+            },
+            "adapter": {
+                "enabled": True,
+                "kind": "multiscale_stats",
+                "stage_dims": [96, 192, 384, 768],
+                "hidden_dim": 32,
+                "residual_gain": 1.25,
+                "dropout": 0.0,
+            },
+        }
+        base = create_model(config["model"], pretrained_override=False)
+        original = MultiScaleAdapterModel(
+            base,
+            stage_dims=(96, 192, 384, 768),
+            hidden_dim=32,
+            residual_gain=1.25,
+        ).eval()
+        with torch.no_grad():
+            original.adapter.net[-1].bias.fill_(0.25)
+        restored = build_checkpoint_model(config, original.state_dict()).eval()
+        images = torch.zeros(1, 3, 64, 64)
+        with torch.inference_mode():
+            expected = original(images)
+            actual = restored(images)
+        self.assertIsInstance(restored, MultiScaleAdapterModel)
+        self.assertTrue(torch.equal(actual, expected))
 
     def test_robustness_dataset(self) -> None:
         with TemporaryDirectory() as temporary:
@@ -254,6 +406,39 @@ class BaselineTests(unittest.TestCase):
         reencoded = transform(image)
         self.assertEqual(reencoded.mode, "RGB")
         self.assertFalse(np.array_equal(np.asarray(image), np.asarray(reencoded)))
+
+    def test_repair_loss_routes_gradients(self) -> None:
+        final = torch.tensor([0.2, -0.4, 0.7, -0.1], requires_grad=True)
+        residual = torch.tensor([0.3, -0.2, 0.5, -0.6], requires_grad=True)
+        labels = torch.tensor([1.0, 0.0, 1.0, 0.0])
+        repair = torch.tensor([True, True, False, False])
+        protect = ~repair
+        teacher = torch.tensor([0.8, -1.0])
+        components = repair_loss_components(
+            final,
+            residual,
+            labels,
+            teacher,
+            repair,
+            protect,
+            bce_weight=0.5,
+            distill_weight=1.0,
+            protect_weight=3.0,
+        )
+        components["loss"].backward()
+        self.assertGreater(float(final.grad[:2].abs().sum()), 0.0)
+        self.assertEqual(float(final.grad[2:].abs().sum()), 0.0)
+        self.assertEqual(float(residual.grad[:2].abs().sum()), 0.0)
+        self.assertGreater(float(residual.grad[2:].abs().sum()), 0.0)
+
+    def test_repair_routing_rejects_unknown_source(self) -> None:
+        with self.assertRaisesRegex(ValueError, "unrouted"):
+            routing_masks(
+                ["GenImage", "unknown"],
+                {"GenImage", "SID_Set"},
+                {"CommunityForensics-Small"},
+                torch.device("cpu"),
+            )
 
 
 if __name__ == "__main__":
