@@ -1,5 +1,36 @@
 # Changelog
 
+## Ensemble vNext candidate — 2026-09-01
+
+Completed on branch `ensemble-vnext`; not yet merged, tagged, pushed, or published as
+a new public release.
+
+### Model
+
+- Freeze a 0.50/0.50 FP32 logit ensemble of Tiny vNext and Base v1.
+- Package both states and provenance in one 115,585,507-parameter Git LFS asset.
+- Record SHA-256
+  `B3A2002C6C297D6382D88B0BA83C4059CE75BBA01C14049A26D3CF45D074DC4B`.
+- Keep the published Adapter v2 asset as the rollback release.
+
+### Evidence
+
+- Historical robust score: `0.944886 -> 0.978314`.
+- Modern global robust score: `0.740077 -> 0.901913`; all 16 condition AUCs improve.
+- Modern generator-macro robust score: `0.718331 -> 0.894738`.
+- Pass all four modern gates; 1,000-replicate macro-gain 95% CI
+  `[0.171015, 0.182232]`.
+- Do not reopen the consumed confirmation split or WildFake observation.
+
+### Runtime and packaging
+
+- Add ensemble-aware checkpoint loading to prediction and evaluation.
+- Add live alpha sweep, packaging, generator-macro bootstrap, latency, release smoke,
+  and direct/package equivalence tooling.
+- Promote member logits to FP32 before blending under CUDA autocast.
+- Switch the branch default inference asset to Ensemble vNext and update current-facing
+  documentation without rewriting historical `v1.0.0` release notes.
+
 ## v1.0.0 — 2026-08-29
 
 First public release.
