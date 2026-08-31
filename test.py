@@ -121,6 +121,21 @@ class BaselineTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             EnsembleModel(model_a, model_b, alpha=1.5)
 
+    def test_ensemble_blend_promotes_member_logits_to_float32(self) -> None:
+        class HalfLogit(torch.nn.Module):
+            def __init__(self, value: float) -> None:
+                super().__init__()
+                self.register_buffer("value", torch.tensor([[value]], dtype=torch.float16))
+
+            def forward(self, images: torch.Tensor) -> torch.Tensor:
+                return self.value.expand(images.shape[0], 1)
+
+        model = EnsembleModel(HalfLogit(0.1), HalfLogit(0.2), alpha=0.5)
+        output = model(torch.zeros(2, 3, 8, 8))
+        expected = 0.5 * model.model_a.value.float() + 0.5 * model.model_b.value.float()
+        self.assertEqual(output.dtype, torch.float32)
+        self.assertTrue(torch.equal(output, expected.expand_as(output)))
+
     def test_build_checkpoint_model_ensemble(self) -> None:
         base_a = create_model({"name": "convnext_tiny", "pretrained": False, "drop_path": 0.0})
         base_b = create_model({"name": "convnext_tiny", "pretrained": False, "drop_path": 0.0})
