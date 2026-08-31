@@ -1,0 +1,13 @@
+{
+  "checkpoint": "E:\\TikTok TechJam\\weights\\aigc-detector-ensemble-vnext.pt",
+  "sha256": "de3c8c6e44c445278d6a47a9bc7f9e96b3cc9d02efa675587f6329d46148587a",
+  "kind": "fixed_weight_logit_ensemble",
+  "alpha": 0.5,
+  "model_a_source": "E:\\TikTok TechJam\\outputs\\tiny_vnext\\final_candidate\\tiny_vnext_seed2026_gain1p60.pt",
+  "model_a_sha256": "1af51d00022b9cd3fabd58d65f01c7f728f6f99c2649aaa86acdbaa9789ede44",
+  "model_a_parameters": 28018018,
+  "model_b_source": "E:\\TikTok TechJam\\outputs\\base_v1\\primary\\best.pt",
+  "model_b_sha256": "f49d423847b26f26faf4c2558f1a831658f0f92df22f37f56b3e33ba51264dd5",
+  "model_b_parameters": 87567489,
+  "total_parameters": 115585507
+}

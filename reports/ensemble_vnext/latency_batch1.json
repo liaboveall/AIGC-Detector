@@ -1,0 +1,24 @@
+{
+  "device": "NVIDIA GeForce RTX 4080 Laptop GPU",
+  "baseline_checkpoint": "E:\\TikTok TechJam\\outputs\\tiny_vnext\\final_candidate\\tiny_vnext_seed2026_gain1p60.pt",
+  "candidate_checkpoint": "E:\\TikTok TechJam\\weights\\aigc-detector-ensemble-vnext.pt",
+  "batch_size": 1,
+  "image_size": 224,
+  "warmup_rounds": 10,
+  "rounds": 40,
+  "bursts_per_round": 20,
+  "protocol": "interleaved alternating-order paired timing; median milliseconds per forward",
+  "latency_ms": {
+    "baseline": 5.0140775012550876,
+    "candidate": 13.874179999402259
+  },
+  "images_per_second": {
+    "baseline": 199.43848090694394,
+    "candidate": 72.07633172144826
+  },
+  "relative_overhead": 1.767045382910291,
+  "parameter_count": {
+    "baseline": 28018018,
+    "candidate": 115585507
+  }
+}

@@ -1,0 +1,1875 @@
+{
+  "baseline": "E:\\TikTok TechJam\\outputs\\tiny_vnext\\historical_gain_sweep\\candidate_gain_1p60.json",
+  "baseline_summary": {
+    "robust_score": 0.9448855995584604,
+    "clean_auc": 0.9723360209150327,
+    "source_robust_scores": {
+      "CommunityForensics-Small": 0.9356085985185186,
+      "GenImage": 0.9182517399703704,
+      "SID_Set": 0.9580635733333333
+    }
+  },
+  "current_thresholds": {
+    "min_robust_score": 0.9325,
+    "min_cf_robust_score": 0.9239,
+    "max_source_robust_drop": 0.003,
+    "max_clean_drop": 0.002,
+    "max_global_family_drop": 0.003,
+    "max_source_family_drop": 0.005,
+    "max_noise_family_drop": 0.002,
+    "max_blur2_drop": 0.002
+  },
+  "historical_thresholds": {
+    "note": "historical reference only; does not gate acceptance",
+    "min_robust_gain": 0.001,
+    "max_blur2_drop": 0.002,
+    "max_clean_drop": 0.002,
+    "max_family_drop": 0.005,
+    "min_noise_gain": 0.001
+  },
+  "comparisons": [
+    {
+      "epoch": null,
+      "robust_score": 0.9550727687436458,
+      "robust_delta": 0.010187169185185363,
+      "source_robust_scores": {
+        "CommunityForensics-Small": 0.9512764740740741,
+        "GenImage": 0.9300337152,
+        "SID_Set": 0.9610551466666668
+      },
+      "source_robust_deltas": {
+        "CommunityForensics-Small": 0.01566787555555549,
+        "GenImage": 0.011781975229629649,
+        "SID_Set": 0.0029915733333335526
+      },
+      "clean_delta": 0.005764712854030463,
+      "gates": {
+        "checks": {
+          "overall_robust_score": {
+            "kind": "absolute",
+            "value": 0.9550727687436458,
+            "limit": 0.9325,
+            "margin": 0.022572768743645777,
+            "pass": true
+          },
+          "cf_robust_score": {
+            "kind": "absolute",
+            "value": 0.9512764740740741,
+            "limit": 0.9239,
+            "margin": 0.027376474074074064,
+            "pass": true
+          },
+          "GenImage_robust_drop": {
+            "kind": "drop",
+            "value": -0.011781975229629649,
+            "limit": 0.003,
+            "margin": 0.014781975229629648,
+            "pass": true
+          },
+          "SID_Set_robust_drop": {
+            "kind": "drop",
+            "value": -0.0029915733333335526,
+            "limit": 0.003,
+            "margin": 0.005991573333333553,
+            "pass": true
+          },
+          "clean_drop": {
+            "kind": "drop",
+            "value": -0.005764712854030463,
+            "limit": 0.002,
+            "margin": 0.007764712854030463,
+            "pass": true
+          },
+          "global_jpeg_family_drop": {
+            "kind": "drop",
+            "value": -0.009356545533768967,
+            "limit": 0.003,
+            "margin": 0.012356545533768967,
+            "pass": true
+          },
+          "global_blur_family_drop": {
+            "kind": "drop",
+            "value": -0.005635211619462677,
+            "limit": 0.003,
+            "margin": 0.008635211619462676,
+            "pass": true
+          },
+          "global_scale_family_drop": {
+            "kind": "drop",
+            "value": -0.005513418736383446,
+            "limit": 0.003,
+            "margin": 0.008513418736383446,
+            "pass": true
+          },
+          "global_noise_family_drop": {
+            "kind": "drop",
+            "value": -0.012338870007262304,
+            "limit": 0.003,
+            "margin": 0.015338870007262303,
+            "pass": true
+          },
+          "global_color_family_drop": {
+            "kind": "drop",
+            "value": -0.013293852723311517,
+            "limit": 0.003,
+            "margin": 0.016293852723311516,
+            "pass": true
+          },
+          "global_crop_family_drop": {
+            "kind": "drop",
+            "value": -0.010073223529411757,
+            "limit": 0.003,
+            "margin": 0.013073223529411756,
+            "pass": true
+          },
+          "CommunityForensics-Small_jpeg_family_drop": {
+            "kind": "drop",
+            "value": -0.022318236111111278,
+            "limit": 0.005,
+            "margin": 0.02731823611111128,
+            "pass": true
+          },
+          "CommunityForensics-Small_blur_family_drop": {
+            "kind": "drop",
+            "value": -0.004497796296296319,
+            "limit": 0.005,
+            "margin": 0.00949779629629632,
+            "pass": true
+          },
+          "CommunityForensics-Small_scale_family_drop": {
+            "kind": "drop",
+            "value": -0.004593083333333303,
+            "limit": 0.005,
+            "margin": 0.009593083333333304,
+            "pass": true
+          },
+          "CommunityForensics-Small_noise_family_drop": {
+            "kind": "drop",
+            "value": -0.0200067037037035,
+            "limit": 0.005,
+            "margin": 0.0250067037037035,
+            "pass": true
+          },
+          "CommunityForensics-Small_color_family_drop": {
+            "kind": "drop",
+            "value": -0.011765722222222275,
+            "limit": 0.005,
+            "margin": 0.016765722222222276,
+            "pass": true
+          },
+          "CommunityForensics-Small_crop_family_drop": {
+            "kind": "drop",
+            "value": -0.006509444444444457,
+            "limit": 0.005,
+            "margin": 0.011509444444444458,
+            "pass": true
+          },
+          "GenImage_jpeg_family_drop": {
+            "kind": "drop",
+            "value": -0.0014083555555555183,
+            "limit": 0.005,
+            "margin": 0.006408355555555518,
+            "pass": true
+          },
+          "GenImage_blur_family_drop": {
+            "kind": "drop",
+            "value": -0.007712711111111048,
+            "limit": 0.005,
+            "margin": 0.012712711111111049,
+            "pass": true
+          },
+          "GenImage_scale_family_drop": {
+            "kind": "drop",
+            "value": -0.00778887111111104,
+            "limit": 0.005,
+            "margin": 0.01278887111111104,
+            "pass": true
+          },
+          "GenImage_noise_family_drop": {
+            "kind": "drop",
+            "value": -0.007020231111111053,
+            "limit": 0.005,
+            "margin": 0.012020231111111054,
+            "pass": true
+          },
+          "GenImage_color_family_drop": {
+            "kind": "drop",
+            "value": -0.01787313777777777,
+            "limit": 0.005,
+            "margin": 0.02287313777777777,
+            "pass": true
+          },
+          "GenImage_crop_family_drop": {
+            "kind": "drop",
+            "value": -0.01471843555555552,
+            "limit": 0.005,
+            "margin": 0.01971843555555552,
+            "pass": true
+          },
+          "SID_Set_jpeg_family_drop": {
+            "kind": "drop",
+            "value": -0.0016733333333334155,
+            "limit": 0.005,
+            "margin": 0.006673333333333416,
+            "pass": true
+          },
+          "SID_Set_blur_family_drop": {
+            "kind": "drop",
+            "value": -0.0007714074074073318,
+            "limit": 0.005,
+            "margin": 0.005771407407407332,
+            "pass": true
+          },
+          "SID_Set_scale_family_drop": {
+            "kind": "drop",
+            "value": -0.0006740000000000634,
+            "limit": 0.005,
+            "margin": 0.0056740000000000635,
+            "pass": true
+          },
+          "SID_Set_noise_family_drop": {
+            "kind": "drop",
+            "value": -0.004806222222222267,
+            "limit": 0.005,
+            "margin": 0.009806222222222268,
+            "pass": true
+          },
+          "SID_Set_color_family_drop": {
+            "kind": "drop",
+            "value": -0.0034133333333336013,
+            "limit": 0.005,
+            "margin": 0.008413333333333602,
+            "pass": true
+          },
+          "SID_Set_crop_family_drop": {
+            "kind": "drop",
+            "value": -0.005331111111111175,
+            "limit": 0.005,
+            "margin": 0.010331111111111176,
+            "pass": true
+          },
+          "noise_family_drop": {
+            "kind": "drop",
+            "value": -0.012338870007262304,
+            "limit": 0.002,
+            "margin": 0.014338870007262304,
+            "pass": true
+          },
+          "blur_2.0_drop": {
+            "kind": "drop",
+            "value": -0.005372974291939059,
+            "limit": 0.002,
+            "margin": 0.007372974291939059,
+            "pass": true
+          }
+        },
+        "failed": [],
+        "pass": true
+      },
+      "historical_reference": {
+        "note": "historical reference only; does not gate acceptance",
+        "robust_delta": 0.010187169185185363,
+        "clean_delta": 0.005764712854030463,
+        "blur_2.0_delta": 0.005372974291939059,
+        "family_deltas": {
+          "jpeg": 0.009356545533768967,
+          "blur": 0.005635211619462677,
+          "scale": 0.005513418736383446,
+          "noise": 0.012338870007262304,
+          "color": 0.013293852723311517,
+          "crop": 0.010073223529411757
+        },
+        "gates": {
+          "robust_gain": true,
+          "blur_2.0_guard": true,
+          "clean_guard": true,
+          "all_family_guards": true,
+          "noise_gain": true
+        },
+        "all_pass": true
+      },
+      "accepted": true,
+      "path": "E:\\TikTok TechJam\\outputs\\ensemble_vnext\\historical_alpha_sweep\\alpha_0p10.json"
+    },
+    {
+      "epoch": null,
+      "robust_score": 0.963636088842411,
+      "robust_delta": 0.018750489283950622,
+      "source_robust_scores": {
+        "CommunityForensics-Small": 0.9641322525925926,
+        "GenImage": 0.9407234313481483,
+        "SID_Set": 0.9637132859259259
+      },
+      "source_robust_deltas": {
+        "CommunityForensics-Small": 0.02852365407407398,
+        "GenImage": 0.022471691377777936,
+        "SID_Set": 0.005649712592592615
+      },
+      "clean_delta": 0.010465073638344369,
+      "gates": {
+        "checks": {
+          "overall_robust_score": {
+            "kind": "absolute",
+            "value": 0.963636088842411,
+            "limit": 0.9325,
+            "margin": 0.031136088842411036,
+            "pass": true
+          },
+          "cf_robust_score": {
+            "kind": "absolute",
+            "value": 0.9641322525925926,
+            "limit": 0.9239,
+            "margin": 0.040232252592592554,
+            "pass": true
+          },
+          "GenImage_robust_drop": {
+            "kind": "drop",
+            "value": -0.022471691377777936,
+            "limit": 0.003,
+            "margin": 0.025471691377777935,
+            "pass": true
+          },
+          "SID_Set_robust_drop": {
+            "kind": "drop",
+            "value": -0.005649712592592615,
+            "limit": 0.003,
+            "margin": 0.008649712592592614,
+            "pass": true
+          },
+          "clean_drop": {
+            "kind": "drop",
+            "value": -0.010465073638344369,
+            "limit": 0.002,
+            "margin": 0.012465073638344369,
+            "pass": true
+          },
+          "global_jpeg_family_drop": {
+            "kind": "drop",
+            "value": -0.01702743006535945,
+            "limit": 0.003,
+            "margin": 0.02002743006535945,
+            "pass": true
+          },
+          "global_blur_family_drop": {
+            "kind": "drop",
+            "value": -0.010383281917211384,
+            "limit": 0.003,
+            "margin": 0.013383281917211384,
+            "pass": true
+          },
+          "global_scale_family_drop": {
+            "kind": "drop",
+            "value": -0.010126236165577396,
+            "limit": 0.003,
+            "margin": 0.013126236165577395,
+            "pass": true
+          },
+          "global_noise_family_drop": {
+            "kind": "drop",
+            "value": -0.02256380188816276,
+            "limit": 0.003,
+            "margin": 0.02556380188816276,
+            "pass": true
+          },
+          "global_color_family_drop": {
+            "kind": "drop",
+            "value": -0.024680596078431205,
+            "limit": 0.003,
+            "margin": 0.027680596078431204,
+            "pass": true
+          },
+          "global_crop_family_drop": {
+            "kind": "drop",
+            "value": -0.019015194771241917,
+            "limit": 0.003,
+            "margin": 0.022015194771241916,
+            "pass": true
+          },
+          "CommunityForensics-Small_jpeg_family_drop": {
+            "kind": "drop",
+            "value": -0.04049395833333347,
+            "limit": 0.005,
+            "margin": 0.045493958333333466,
+            "pass": true
+          },
+          "CommunityForensics-Small_blur_family_drop": {
+            "kind": "drop",
+            "value": -0.007942851851851729,
+            "limit": 0.005,
+            "margin": 0.01294285185185173,
+            "pass": true
+          },
+          "CommunityForensics-Small_scale_family_drop": {
+            "kind": "drop",
+            "value": -0.008093611111111176,
+            "limit": 0.005,
+            "margin": 0.013093611111111177,
+            "pass": true
+          },
+          "CommunityForensics-Small_noise_family_drop": {
+            "kind": "drop",
+            "value": -0.036151037037036926,
+            "limit": 0.005,
+            "margin": 0.041151037037036924,
+            "pass": true
+          },
+          "CommunityForensics-Small_color_family_drop": {
+            "kind": "drop",
+            "value": -0.0210446666666666,
+            "limit": 0.005,
+            "margin": 0.0260446666666666,
+            "pass": true
+          },
+          "CommunityForensics-Small_crop_family_drop": {
+            "kind": "drop",
+            "value": -0.01159633333333343,
+            "limit": 0.005,
+            "margin": 0.01659633333333343,
+            "pass": true
+          },
+          "GenImage_jpeg_family_drop": {
+            "kind": "drop",
+            "value": -0.002574577777777698,
+            "limit": 0.005,
+            "margin": 0.007574577777777698,
+            "pass": true
+          },
+          "GenImage_blur_family_drop": {
+            "kind": "drop",
+            "value": -0.014776699259259285,
+            "limit": 0.005,
+            "margin": 0.019776699259259286,
+            "pass": true
+          },
+          "GenImage_scale_family_drop": {
+            "kind": "drop",
+            "value": -0.014908515555555613,
+            "limit": 0.005,
+            "margin": 0.019908515555555614,
+            "pass": true
+          },
+          "GenImage_noise_family_drop": {
+            "kind": "drop",
+            "value": -0.012780942222222258,
+            "limit": 0.005,
+            "margin": 0.01778094222222226,
+            "pass": true
+          },
+          "GenImage_color_family_drop": {
+            "kind": "drop",
+            "value": -0.034157511111111094,
+            "limit": 0.005,
+            "margin": 0.03915751111111109,
+            "pass": true
+          },
+          "GenImage_crop_family_drop": {
+            "kind": "drop",
+            "value": -0.028908657777777957,
+            "limit": 0.005,
+            "margin": 0.033908657777777955,
+            "pass": true
+          },
+          "SID_Set_jpeg_family_drop": {
+            "kind": "drop",
+            "value": -0.003055555555555589,
+            "limit": 0.005,
+            "margin": 0.00805555555555559,
+            "pass": true
+          },
+          "SID_Set_blur_family_drop": {
+            "kind": "drop",
+            "value": -0.0012746666666665352,
+            "limit": 0.005,
+            "margin": 0.006274666666666535,
+            "pass": true
+          },
+          "SID_Set_scale_family_drop": {
+            "kind": "drop",
+            "value": -0.001037777777777693,
+            "limit": 0.005,
+            "margin": 0.006037777777777693,
+            "pass": true
+          },
+          "SID_Set_noise_family_drop": {
+            "kind": "drop",
+            "value": -0.009020592592592691,
+            "limit": 0.005,
+            "margin": 0.014020592592592692,
+            "pass": true
+          },
+          "SID_Set_color_family_drop": {
+            "kind": "drop",
+            "value": -0.006505555555555764,
+            "limit": 0.005,
+            "margin": 0.011505555555555765,
+            "pass": true
+          },
+          "SID_Set_crop_family_drop": {
+            "kind": "drop",
+            "value": -0.010592444444444626,
+            "limit": 0.005,
+            "margin": 0.015592444444444627,
+            "pass": true
+          },
+          "noise_family_drop": {
+            "kind": "drop",
+            "value": -0.02256380188816276,
+            "limit": 0.002,
+            "margin": 0.024563801888162762,
+            "pass": true
+          },
+          "blur_2.0_drop": {
+            "kind": "drop",
+            "value": -0.009887958169934485,
+            "limit": 0.002,
+            "margin": 0.011887958169934485,
+            "pass": true
+          }
+        },
+        "failed": [],
+        "pass": true
+      },
+      "historical_reference": {
+        "note": "historical reference only; does not gate acceptance",
+        "robust_delta": 0.018750489283950622,
+        "clean_delta": 0.010465073638344369,
+        "blur_2.0_delta": 0.009887958169934485,
+        "family_deltas": {
+          "jpeg": 0.01702743006535945,
+          "blur": 0.010383281917211384,
+          "scale": 0.010126236165577396,
+          "noise": 0.02256380188816276,
+          "color": 0.024680596078431205,
+          "crop": 0.019015194771241917
+        },
+        "gates": {
+          "robust_gain": true,
+          "blur_2.0_guard": true,
+          "clean_guard": true,
+          "all_family_guards": true,
+          "noise_gain": true
+        },
+        "all_pass": true
+      },
+      "accepted": true,
+      "path": "E:\\TikTok TechJam\\outputs\\ensemble_vnext\\historical_alpha_sweep\\alpha_0p20.json"
+    },
+    {
+      "epoch": null,
+      "robust_score": 0.970405216673929,
+      "robust_delta": 0.025519617115468574,
+      "source_robust_scores": {
+        "CommunityForensics-Small": 0.9739836281481482,
+        "GenImage": 0.9499054933333334,
+        "SID_Set": 0.9659052740740741
+      },
+      "source_robust_deltas": {
+        "CommunityForensics-Small": 0.038375029629629576,
+        "GenImage": 0.031653753362963055,
+        "SID_Set": 0.007841700740740865
+      },
+      "clean_delta": 0.01415967233115456,
+      "gates": {
+        "checks": {
+          "overall_robust_score": {
+            "kind": "absolute",
+            "value": 0.970405216673929,
+            "limit": 0.9325,
+            "margin": 0.03790521667392899,
+            "pass": true
+          },
+          "cf_robust_score": {
+            "kind": "absolute",
+            "value": 0.9739836281481482,
+            "limit": 0.9239,
+            "margin": 0.05008362814814815,
+            "pass": true
+          },
+          "GenImage_robust_drop": {
+            "kind": "drop",
+            "value": -0.031653753362963055,
+            "limit": 0.003,
+            "margin": 0.03465375336296306,
+            "pass": true
+          },
+          "SID_Set_robust_drop": {
+            "kind": "drop",
+            "value": -0.007841700740740865,
+            "limit": 0.003,
+            "margin": 0.010841700740740864,
+            "pass": true
+          },
+          "clean_drop": {
+            "kind": "drop",
+            "value": -0.01415967233115456,
+            "limit": 0.002,
+            "margin": 0.016159672331154562,
+            "pass": true
+          },
+          "global_jpeg_family_drop": {
+            "kind": "drop",
+            "value": -0.022871097167755927,
+            "limit": 0.003,
+            "margin": 0.025871097167755926,
+            "pass": true
+          },
+          "global_blur_family_drop": {
+            "kind": "drop",
+            "value": -0.014246269862018934,
+            "limit": 0.003,
+            "margin": 0.017246269862018933,
+            "pass": true
+          },
+          "global_scale_family_drop": {
+            "kind": "drop",
+            "value": -0.013813863180828001,
+            "limit": 0.003,
+            "margin": 0.016813863180828,
+            "pass": true
+          },
+          "global_noise_family_drop": {
+            "kind": "drop",
+            "value": -0.03047628874364572,
+            "limit": 0.003,
+            "margin": 0.03347628874364572,
+            "pass": true
+          },
+          "global_color_family_drop": {
+            "kind": "drop",
+            "value": -0.03399798518518515,
+            "limit": 0.003,
+            "margin": 0.036997985185185156,
+            "pass": true
+          },
+          "global_crop_family_drop": {
+            "kind": "drop",
+            "value": -0.026540562962963032,
+            "limit": 0.003,
+            "margin": 0.02954056296296303,
+            "pass": true
+          },
+          "CommunityForensics-Small_jpeg_family_drop": {
+            "kind": "drop",
+            "value": -0.054138305555555766,
+            "limit": 0.005,
+            "margin": 0.05913830555555576,
+            "pass": true
+          },
+          "CommunityForensics-Small_blur_family_drop": {
+            "kind": "drop",
+            "value": -0.010523666666666709,
+            "limit": 0.005,
+            "margin": 0.01552366666666671,
+            "pass": true
+          },
+          "CommunityForensics-Small_scale_family_drop": {
+            "kind": "drop",
+            "value": -0.010682750000000074,
+            "limit": 0.005,
+            "margin": 0.015682750000000075,
+            "pass": true
+          },
+          "CommunityForensics-Small_noise_family_drop": {
+            "kind": "drop",
+            "value": -0.04826183333333334,
+            "limit": 0.005,
+            "margin": 0.053261833333333335,
+            "pass": true
+          },
+          "CommunityForensics-Small_color_family_drop": {
+            "kind": "drop",
+            "value": -0.028061583333333306,
+            "limit": 0.005,
+            "margin": 0.033061583333333304,
+            "pass": true
+          },
+          "CommunityForensics-Small_crop_family_drop": {
+            "kind": "drop",
+            "value": -0.015314666666666588,
+            "limit": 0.005,
+            "margin": 0.02031466666666659,
+            "pass": true
+          },
+          "GenImage_jpeg_family_drop": {
+            "kind": "drop",
+            "value": -0.003421831111111162,
+            "limit": 0.005,
+            "margin": 0.008421831111111163,
+            "pass": true
+          },
+          "GenImage_blur_family_drop": {
+            "kind": "drop",
+            "value": -0.020985078518518496,
+            "limit": 0.005,
+            "margin": 0.025985078518518497,
+            "pass": true
+          },
+          "GenImage_scale_family_drop": {
+            "kind": "drop",
+            "value": -0.021092835555555633,
+            "limit": 0.005,
+            "margin": 0.026092835555555634,
+            "pass": true
+          },
+          "GenImage_noise_family_drop": {
+            "kind": "drop",
+            "value": -0.017103407407407345,
+            "limit": 0.005,
+            "margin": 0.022103407407407346,
+            "pass": true
+          },
+          "GenImage_color_family_drop": {
+            "kind": "drop",
+            "value": -0.04825208888888899,
+            "limit": 0.005,
+            "margin": 0.053252088888888986,
+            "pass": true
+          },
+          "GenImage_crop_family_drop": {
+            "kind": "drop",
+            "value": -0.04180337777777776,
+            "limit": 0.005,
+            "margin": 0.04680337777777776,
+            "pass": true
+          },
+          "SID_Set_jpeg_family_drop": {
+            "kind": "drop",
+            "value": -0.003945222222222267,
+            "limit": 0.005,
+            "margin": 0.008945222222222268,
+            "pass": true
+          },
+          "SID_Set_blur_family_drop": {
+            "kind": "drop",
+            "value": -0.0013826666666665322,
+            "limit": 0.005,
+            "margin": 0.006382666666666532,
+            "pass": true
+          },
+          "SID_Set_scale_family_drop": {
+            "kind": "drop",
+            "value": -0.0009131111111111423,
+            "limit": 0.005,
+            "margin": 0.005913111111111142,
+            "pass": true
+          },
+          "SID_Set_noise_family_drop": {
+            "kind": "drop",
+            "value": -0.01229718518518541,
+            "limit": 0.005,
+            "margin": 0.017297185185185412,
+            "pass": true
+          },
+          "SID_Set_color_family_drop": {
+            "kind": "drop",
+            "value": -0.009331333333333358,
+            "limit": 0.005,
+            "margin": 0.014331333333333359,
+            "pass": true
+          },
+          "SID_Set_crop_family_drop": {
+            "kind": "drop",
+            "value": -0.015334222222222249,
+            "limit": 0.005,
+            "margin": 0.02033422222222225,
+            "pass": true
+          },
+          "noise_family_drop": {
+            "kind": "drop",
+            "value": -0.03047628874364572,
+            "limit": 0.002,
+            "margin": 0.03247628874364572,
+            "pass": true
+          },
+          "blur_2.0_drop": {
+            "kind": "drop",
+            "value": -0.013542567320261378,
+            "limit": 0.002,
+            "margin": 0.015542567320261378,
+            "pass": true
+          }
+        },
+        "failed": [],
+        "pass": true
+      },
+      "historical_reference": {
+        "note": "historical reference only; does not gate acceptance",
+        "robust_delta": 0.025519617115468574,
+        "clean_delta": 0.01415967233115456,
+        "blur_2.0_delta": 0.013542567320261378,
+        "family_deltas": {
+          "jpeg": 0.022871097167755927,
+          "blur": 0.014246269862018934,
+          "scale": 0.013813863180828001,
+          "noise": 0.03047628874364572,
+          "color": 0.03399798518518515,
+          "crop": 0.026540562962963032
+        },
+        "gates": {
+          "robust_gain": true,
+          "blur_2.0_guard": true,
+          "clean_guard": true,
+          "all_family_guards": true,
+          "noise_gain": true
+        },
+        "all_pass": true
+      },
+      "accepted": true,
+      "path": "E:\\TikTok TechJam\\outputs\\ensemble_vnext\\historical_alpha_sweep\\alpha_0p30.json"
+    },
+    {
+      "epoch": null,
+      "robust_score": 0.9752835904139434,
+      "robust_delta": 0.030397990855483004,
+      "source_robust_scores": {
+        "CommunityForensics-Small": 0.9809444874074074,
+        "GenImage": 0.957251168711111,
+        "SID_Set": 0.9673548444444444
+      },
+      "source_robust_deltas": {
+        "CommunityForensics-Small": 0.04533588888888873,
+        "GenImage": 0.038999428740740694,
+        "SID_Set": 0.009291271111111166
+      },
+      "clean_delta": 0.016883729847494644,
+      "gates": {
+        "checks": {
+          "overall_robust_score": {
+            "kind": "absolute",
+            "value": 0.9752835904139434,
+            "limit": 0.9325,
+            "margin": 0.04278359041394342,
+            "pass": true
+          },
+          "cf_robust_score": {
+            "kind": "absolute",
+            "value": 0.9809444874074074,
+            "limit": 0.9239,
+            "margin": 0.05704448740740731,
+            "pass": true
+          },
+          "GenImage_robust_drop": {
+            "kind": "drop",
+            "value": -0.038999428740740694,
+            "limit": 0.003,
+            "margin": 0.041999428740740696,
+            "pass": true
+          },
+          "SID_Set_robust_drop": {
+            "kind": "drop",
+            "value": -0.009291271111111166,
+            "limit": 0.003,
+            "margin": 0.012291271111111165,
+            "pass": true
+          },
+          "clean_drop": {
+            "kind": "drop",
+            "value": -0.016883729847494644,
+            "limit": 0.002,
+            "margin": 0.018883729847494646,
+            "pass": true
+          },
+          "global_jpeg_family_drop": {
+            "kind": "drop",
+            "value": -0.02684225185185185,
+            "limit": 0.003,
+            "margin": 0.02984225185185185,
+            "pass": true
+          },
+          "global_blur_family_drop": {
+            "kind": "drop",
+            "value": -0.017129383877995674,
+            "limit": 0.003,
+            "margin": 0.020129383877995673,
+            "pass": true
+          },
+          "global_scale_family_drop": {
+            "kind": "drop",
+            "value": -0.01644375424836597,
+            "limit": 0.003,
+            "margin": 0.01944375424836597,
+            "pass": true
+          },
+          "global_noise_family_drop": {
+            "kind": "drop",
+            "value": -0.03607790617283968,
+            "limit": 0.003,
+            "margin": 0.03907790617283968,
+            "pass": true
+          },
+          "global_color_family_drop": {
+            "kind": "drop",
+            "value": -0.04114486100217862,
+            "limit": 0.003,
+            "margin": 0.044144861002178626,
+            "pass": true
+          },
+          "global_crop_family_drop": {
+            "kind": "drop",
+            "value": -0.032431030936819316,
+            "limit": 0.003,
+            "margin": 0.03543103093681932,
+            "pass": true
+          },
+          "CommunityForensics-Small_jpeg_family_drop": {
+            "kind": "drop",
+            "value": -0.06331184722222227,
+            "limit": 0.005,
+            "margin": 0.06831184722222228,
+            "pass": true
+          },
+          "CommunityForensics-Small_blur_family_drop": {
+            "kind": "drop",
+            "value": -0.01231922222222226,
+            "limit": 0.005,
+            "margin": 0.01731922222222226,
+            "pass": true
+          },
+          "CommunityForensics-Small_scale_family_drop": {
+            "kind": "drop",
+            "value": -0.012454611111111014,
+            "limit": 0.005,
+            "margin": 0.017454611111111015,
+            "pass": true
+          },
+          "CommunityForensics-Small_noise_family_drop": {
+            "kind": "drop",
+            "value": -0.05679785185185171,
+            "limit": 0.005,
+            "margin": 0.06179785185185171,
+            "pass": true
+          },
+          "CommunityForensics-Small_color_family_drop": {
+            "kind": "drop",
+            "value": -0.032979138888888704,
+            "limit": 0.005,
+            "margin": 0.0379791388888887,
+            "pass": true
+          },
+          "CommunityForensics-Small_crop_family_drop": {
+            "kind": "drop",
+            "value": -0.017796388888888903,
+            "limit": 0.005,
+            "margin": 0.022796388888888904,
+            "pass": true
+          },
+          "GenImage_jpeg_family_drop": {
+            "kind": "drop",
+            "value": -0.0037604622222222606,
+            "limit": 0.005,
+            "margin": 0.008760462222222262,
+            "pass": true
+          },
+          "GenImage_blur_family_drop": {
+            "kind": "drop",
+            "value": -0.0259163022222223,
+            "limit": 0.005,
+            "margin": 0.0309163022222223,
+            "pass": true
+          },
+          "GenImage_scale_family_drop": {
+            "kind": "drop",
+            "value": -0.025607040000000247,
+            "limit": 0.005,
+            "margin": 0.03060704000000025,
+            "pass": true
+          },
+          "GenImage_noise_family_drop": {
+            "kind": "drop",
+            "value": -0.019648853333333327,
+            "limit": 0.005,
+            "margin": 0.024648853333333328,
+            "pass": true
+          },
+          "GenImage_color_family_drop": {
+            "kind": "drop",
+            "value": -0.06007288888888884,
+            "limit": 0.005,
+            "margin": 0.06507288888888885,
+            "pass": true
+          },
+          "GenImage_crop_family_drop": {
+            "kind": "drop",
+            "value": -0.05276771555555548,
+            "limit": 0.005,
+            "margin": 0.05776771555555548,
+            "pass": true
+          },
+          "SID_Set_jpeg_family_drop": {
+            "kind": "drop",
+            "value": -0.004271555555555695,
+            "limit": 0.005,
+            "margin": 0.009271555555555696,
+            "pass": true
+          },
+          "SID_Set_blur_family_drop": {
+            "kind": "drop",
+            "value": -0.0008997037037037359,
+            "limit": 0.005,
+            "margin": 0.005899703703703736,
+            "pass": true
+          },
+          "SID_Set_scale_family_drop": {
+            "kind": "drop",
+            "value": -0.0001346666666666163,
+            "limit": 0.005,
+            "margin": 0.005134666666666616,
+            "pass": true
+          },
+          "SID_Set_noise_family_drop": {
+            "kind": "drop",
+            "value": -0.014372592592592826,
+            "limit": 0.005,
+            "margin": 0.019372592592592826,
+            "pass": true
+          },
+          "SID_Set_color_family_drop": {
+            "kind": "drop",
+            "value": -0.011506000000000238,
+            "limit": 0.005,
+            "margin": 0.01650600000000024,
+            "pass": true
+          },
+          "SID_Set_crop_family_drop": {
+            "kind": "drop",
+            "value": -0.01929022222222232,
+            "limit": 0.005,
+            "margin": 0.02429022222222232,
+            "pass": true
+          },
+          "noise_family_drop": {
+            "kind": "drop",
+            "value": -0.03607790617283968,
+            "limit": 0.002,
+            "margin": 0.03807790617283968,
+            "pass": true
+          },
+          "blur_2.0_drop": {
+            "kind": "drop",
+            "value": -0.016195248801742834,
+            "limit": 0.002,
+            "margin": 0.018195248801742836,
+            "pass": true
+          }
+        },
+        "failed": [],
+        "pass": true
+      },
+      "historical_reference": {
+        "note": "historical reference only; does not gate acceptance",
+        "robust_delta": 0.030397990855483004,
+        "clean_delta": 0.016883729847494644,
+        "blur_2.0_delta": 0.016195248801742834,
+        "family_deltas": {
+          "jpeg": 0.02684225185185185,
+          "blur": 0.017129383877995674,
+          "scale": 0.01644375424836597,
+          "noise": 0.03607790617283968,
+          "color": 0.04114486100217862,
+          "crop": 0.032431030936819316
+        },
+        "gates": {
+          "robust_gain": true,
+          "blur_2.0_guard": true,
+          "clean_guard": true,
+          "all_family_guards": true,
+          "noise_gain": true
+        },
+        "all_pass": true
+      },
+      "accepted": true,
+      "path": "E:\\TikTok TechJam\\outputs\\ensemble_vnext\\historical_alpha_sweep\\alpha_0p40.json"
+    },
+    {
+      "epoch": null,
+      "robust_score": 0.9783143236601308,
+      "robust_delta": 0.033428724101670415,
+      "source_robust_scores": {
+        "CommunityForensics-Small": 0.9855172466666668,
+        "GenImage": 0.9609659600592593,
+        "SID_Set": 0.9676313007407408
+      },
+      "source_robust_deltas": {
+        "CommunityForensics-Small": 0.049908648148148216,
+        "GenImage": 0.04271422008888892,
+        "SID_Set": 0.009567727407407522
+      },
+      "clean_delta": 0.0186959755991285,
+      "gates": {
+        "checks": {
+          "overall_robust_score": {
+            "kind": "absolute",
+            "value": 0.9783143236601308,
+            "limit": 0.9325,
+            "margin": 0.04581432366013083,
+            "pass": true
+          },
+          "cf_robust_score": {
+            "kind": "absolute",
+            "value": 0.9855172466666668,
+            "limit": 0.9239,
+            "margin": 0.06161724666666679,
+            "pass": true
+          },
+          "GenImage_robust_drop": {
+            "kind": "drop",
+            "value": -0.04271422008888892,
+            "limit": 0.003,
+            "margin": 0.045714220088888924,
+            "pass": true
+          },
+          "SID_Set_robust_drop": {
+            "kind": "drop",
+            "value": -0.009567727407407522,
+            "limit": 0.003,
+            "margin": 0.012567727407407522,
+            "pass": true
+          },
+          "clean_drop": {
+            "kind": "drop",
+            "value": -0.0186959755991285,
+            "limit": 0.002,
+            "margin": 0.020695975599128502,
+            "pass": true
+          },
+          "global_jpeg_family_drop": {
+            "kind": "drop",
+            "value": -0.029086096732026223,
+            "limit": 0.003,
+            "margin": 0.032086096732026226,
+            "pass": true
+          },
+          "global_blur_family_drop": {
+            "kind": "drop",
+            "value": -0.018958784604212187,
+            "limit": 0.003,
+            "margin": 0.021958784604212186,
+            "pass": true
+          },
+          "global_scale_family_drop": {
+            "kind": "drop",
+            "value": -0.017898966448801734,
+            "limit": 0.003,
+            "margin": 0.020898966448801733,
+            "pass": true
+          },
+          "global_noise_family_drop": {
+            "kind": "drop",
+            "value": -0.039492252723311694,
+            "limit": 0.003,
+            "margin": 0.042492252723311696,
+            "pass": true
+          },
+          "global_color_family_drop": {
+            "kind": "drop",
+            "value": -0.04624334640522887,
+            "limit": 0.003,
+            "margin": 0.04924334640522887,
+            "pass": true
+          },
+          "global_crop_family_drop": {
+            "kind": "drop",
+            "value": -0.03665811241830075,
+            "limit": 0.003,
+            "margin": 0.03965811241830075,
+            "pass": true
+          },
+          "CommunityForensics-Small_jpeg_family_drop": {
+            "kind": "drop",
+            "value": -0.06888504166666676,
+            "limit": 0.005,
+            "margin": 0.07388504166666676,
+            "pass": true
+          },
+          "CommunityForensics-Small_blur_family_drop": {
+            "kind": "drop",
+            "value": -0.013472259259259212,
+            "limit": 0.005,
+            "margin": 0.018472259259259213,
+            "pass": true
+          },
+          "CommunityForensics-Small_scale_family_drop": {
+            "kind": "drop",
+            "value": -0.013561916666666507,
+            "limit": 0.005,
+            "margin": 0.018561916666666508,
+            "pass": true
+          },
+          "CommunityForensics-Small_noise_family_drop": {
+            "kind": "drop",
+            "value": -0.062447240740740595,
+            "limit": 0.005,
+            "margin": 0.0674472407407406,
+            "pass": true
+          },
+          "CommunityForensics-Small_color_family_drop": {
+            "kind": "drop",
+            "value": -0.03619141666666659,
+            "limit": 0.005,
+            "margin": 0.041191416666666585,
+            "pass": true
+          },
+          "CommunityForensics-Small_crop_family_drop": {
+            "kind": "drop",
+            "value": -0.01932161111111108,
+            "limit": 0.005,
+            "margin": 0.024321611111111082,
+            "pass": true
+          },
+          "GenImage_jpeg_family_drop": {
+            "kind": "drop",
+            "value": -0.0033176888888889478,
+            "limit": 0.005,
+            "margin": 0.008317688888888949,
+            "pass": true
+          },
+          "GenImage_blur_family_drop": {
+            "kind": "drop",
+            "value": -0.029193102222222156,
+            "limit": 0.005,
+            "margin": 0.03419310222222215,
+            "pass": true
+          },
+          "GenImage_scale_family_drop": {
+            "kind": "drop",
+            "value": -0.02785059555555558,
+            "limit": 0.005,
+            "margin": 0.03285059555555558,
+            "pass": true
+          },
+          "GenImage_noise_family_drop": {
+            "kind": "drop",
+            "value": -0.020095810370370337,
+            "limit": 0.005,
+            "margin": 0.025095810370370338,
+            "pass": true
+          },
+          "GenImage_color_family_drop": {
+            "kind": "drop",
+            "value": -0.06919694222222217,
+            "limit": 0.005,
+            "margin": 0.07419694222222217,
+            "pass": true
+          },
+          "GenImage_crop_family_drop": {
+            "kind": "drop",
+            "value": -0.06141425777777787,
+            "limit": 0.005,
+            "margin": 0.06641425777777787,
+            "pass": true
+          },
+          "SID_Set_jpeg_family_drop": {
+            "kind": "drop",
+            "value": -0.003733666666666746,
+            "limit": 0.005,
+            "margin": 0.008733666666666747,
+            "pass": true
+          },
+          "SID_Set_blur_family_drop": {
+            "kind": "drop",
+            "value": 0.0005712592592592713,
+            "limit": 0.005,
+            "margin": 0.004428740740740729,
+            "pass": true
+          },
+          "SID_Set_scale_family_drop": {
+            "kind": "drop",
+            "value": 0.0017206666666667036,
+            "limit": 0.005,
+            "margin": 0.0032793333333332965,
+            "pass": true
+          },
+          "SID_Set_noise_family_drop": {
+            "kind": "drop",
+            "value": -0.014886962962963102,
+            "limit": 0.005,
+            "margin": 0.019886962962963103,
+            "pass": true
+          },
+          "SID_Set_color_family_drop": {
+            "kind": "drop",
+            "value": -0.012752222222222498,
+            "limit": 0.005,
+            "margin": 0.0177522222222225,
+            "pass": true
+          },
+          "SID_Set_crop_family_drop": {
+            "kind": "drop",
+            "value": -0.022526666666666695,
+            "limit": 0.005,
+            "margin": 0.027526666666666696,
+            "pass": true
+          },
+          "noise_family_drop": {
+            "kind": "drop",
+            "value": -0.039492252723311694,
+            "limit": 0.002,
+            "margin": 0.041492252723311696,
+            "pass": true
+          },
+          "blur_2.0_drop": {
+            "kind": "drop",
+            "value": -0.017659844880174247,
+            "limit": 0.002,
+            "margin": 0.01965984488017425,
+            "pass": true
+          }
+        },
+        "failed": [],
+        "pass": true
+      },
+      "historical_reference": {
+        "note": "historical reference only; does not gate acceptance",
+        "robust_delta": 0.033428724101670415,
+        "clean_delta": 0.0186959755991285,
+        "blur_2.0_delta": 0.017659844880174247,
+        "family_deltas": {
+          "jpeg": 0.029086096732026223,
+          "blur": 0.018958784604212187,
+          "scale": 0.017898966448801734,
+          "noise": 0.039492252723311694,
+          "color": 0.04624334640522887,
+          "crop": 0.03665811241830075
+        },
+        "gates": {
+          "robust_gain": true,
+          "blur_2.0_guard": true,
+          "clean_guard": true,
+          "all_family_guards": true,
+          "noise_gain": true
+        },
+        "all_pass": true
+      },
+      "accepted": true,
+      "path": "E:\\TikTok TechJam\\outputs\\ensemble_vnext\\historical_alpha_sweep\\alpha_0p50.json"
+    },
+    {
+      "epoch": null,
+      "robust_score": 0.9795069945679014,
+      "robust_delta": 0.03462139500944095,
+      "source_robust_scores": {
+        "CommunityForensics-Small": 0.9882625837037038,
+        "GenImage": 0.9607123285333334,
+        "SID_Set": 0.9661572325925926
+      },
+      "source_robust_deltas": {
+        "CommunityForensics-Small": 0.05265398518518516,
+        "GenImage": 0.042460588562963086,
+        "SID_Set": 0.008093659259259312
+      },
+      "clean_delta": 0.019606128104575182,
+      "gates": {
+        "checks": {
+          "overall_robust_score": {
+            "kind": "absolute",
+            "value": 0.9795069945679014,
+            "limit": 0.9325,
+            "margin": 0.04700699456790136,
+            "pass": true
+          },
+          "cf_robust_score": {
+            "kind": "absolute",
+            "value": 0.9882625837037038,
+            "limit": 0.9239,
+            "margin": 0.06436258370370374,
+            "pass": true
+          },
+          "GenImage_robust_drop": {
+            "kind": "drop",
+            "value": -0.042460588562963086,
+            "limit": 0.003,
+            "margin": 0.04546058856296309,
+            "pass": true
+          },
+          "SID_Set_robust_drop": {
+            "kind": "drop",
+            "value": -0.008093659259259312,
+            "limit": 0.003,
+            "margin": 0.01109365925925931,
+            "pass": true
+          },
+          "clean_drop": {
+            "kind": "drop",
+            "value": -0.019606128104575182,
+            "limit": 0.002,
+            "margin": 0.021606128104575184,
+            "pass": true
+          },
+          "global_jpeg_family_drop": {
+            "kind": "drop",
+            "value": -0.02972538562091509,
+            "limit": 0.003,
+            "margin": 0.03272538562091509,
+            "pass": true
+          },
+          "global_blur_family_drop": {
+            "kind": "drop",
+            "value": -0.019592282352941304,
+            "limit": 0.003,
+            "margin": 0.022592282352941303,
+            "pass": true
+          },
+          "global_scale_family_drop": {
+            "kind": "drop",
+            "value": -0.018014786928104654,
+            "limit": 0.003,
+            "margin": 0.021014786928104653,
+            "pass": true
+          },
+          "global_noise_family_drop": {
+            "kind": "drop",
+            "value": -0.04081889789397242,
+            "limit": 0.003,
+            "margin": 0.04381889789397242,
+            "pass": true
+          },
+          "global_color_family_drop": {
+            "kind": "drop",
+            "value": -0.04939906928104576,
+            "limit": 0.003,
+            "margin": 0.05239906928104576,
+            "pass": true
+          },
+          "global_crop_family_drop": {
+            "kind": "drop",
+            "value": -0.03922877908496736,
+            "limit": 0.003,
+            "margin": 0.04222877908496736,
+            "pass": true
+          },
+          "CommunityForensics-Small_jpeg_family_drop": {
+            "kind": "drop",
+            "value": -0.0719649583333335,
+            "limit": 0.005,
+            "margin": 0.0769649583333335,
+            "pass": true
+          },
+          "CommunityForensics-Small_blur_family_drop": {
+            "kind": "drop",
+            "value": -0.014091148148148158,
+            "limit": 0.005,
+            "margin": 0.01909114814814816,
+            "pass": true
+          },
+          "CommunityForensics-Small_scale_family_drop": {
+            "kind": "drop",
+            "value": -0.014126638888888765,
+            "limit": 0.005,
+            "margin": 0.019126638888888766,
+            "pass": true
+          },
+          "CommunityForensics-Small_noise_family_drop": {
+            "kind": "drop",
+            "value": -0.06592392592592589,
+            "limit": 0.005,
+            "margin": 0.07092392592592589,
+            "pass": true
+          },
+          "CommunityForensics-Small_color_family_drop": {
+            "kind": "drop",
+            "value": -0.03806166666666666,
+            "limit": 0.005,
+            "margin": 0.04306166666666666,
+            "pass": true
+          },
+          "CommunityForensics-Small_crop_family_drop": {
+            "kind": "drop",
+            "value": -0.020079722222222096,
+            "limit": 0.005,
+            "margin": 0.025079722222222097,
+            "pass": true
+          },
+          "GenImage_jpeg_family_drop": {
+            "kind": "drop",
+            "value": -0.0014015288888888922,
+            "limit": 0.005,
+            "margin": 0.006401528888888892,
+            "pass": true
+          },
+          "GenImage_blur_family_drop": {
+            "kind": "drop",
+            "value": -0.03010389333333341,
+            "limit": 0.005,
+            "margin": 0.03510389333333341,
+            "pass": true
+          },
+          "GenImage_scale_family_drop": {
+            "kind": "drop",
+            "value": -0.02697905777777787,
+            "limit": 0.005,
+            "margin": 0.03197905777777787,
+            "pass": true
+          },
+          "GenImage_noise_family_drop": {
+            "kind": "drop",
+            "value": -0.017839881481481523,
+            "limit": 0.005,
+            "margin": 0.022839881481481524,
+            "pass": true
+          },
+          "GenImage_color_family_drop": {
+            "kind": "drop",
+            "value": -0.07539370666666667,
+            "limit": 0.005,
+            "margin": 0.08039370666666668,
+            "pass": true
+          },
+          "GenImage_crop_family_drop": {
+            "kind": "drop",
+            "value": -0.0673322666666667,
+            "limit": 0.005,
+            "margin": 0.0723322666666667,
+            "pass": true
+          },
+          "SID_Set_jpeg_family_drop": {
+            "kind": "drop",
+            "value": -0.0017806666666666526,
+            "limit": 0.005,
+            "margin": 0.006780666666666653,
+            "pass": true
+          },
+          "SID_Set_blur_family_drop": {
+            "kind": "drop",
+            "value": 0.0035028148148148475,
+            "limit": 0.005,
+            "margin": 0.0014971851851851526,
+            "pass": true
+          },
+          "SID_Set_scale_family_drop": {
+            "kind": "drop",
+            "value": 0.005079111111111034,
+            "limit": 0.005,
+            "margin": -7.91111111110342e-05,
+            "pass": false
+          },
+          "SID_Set_noise_family_drop": {
+            "kind": "drop",
+            "value": -0.013618814814814861,
+            "limit": 0.005,
+            "margin": 0.018618814814814862,
+            "pass": true
+          },
+          "SID_Set_color_family_drop": {
+            "kind": "drop",
+            "value": -0.012647999999999993,
+            "limit": 0.005,
+            "margin": 0.017647999999999994,
+            "pass": true
+          },
+          "SID_Set_crop_family_drop": {
+            "kind": "drop",
+            "value": -0.024389333333333263,
+            "limit": 0.005,
+            "margin": 0.029389333333333264,
+            "pass": true
+          },
+          "noise_family_drop": {
+            "kind": "drop",
+            "value": -0.04081889789397242,
+            "limit": 0.002,
+            "margin": 0.04281889789397242,
+            "pass": true
+          },
+          "blur_2.0_drop": {
+            "kind": "drop",
+            "value": -0.017723412636165614,
+            "limit": 0.002,
+            "margin": 0.019723412636165616,
+            "pass": true
+          }
+        },
+        "failed": [
+          "SID_Set_scale_family_drop"
+        ],
+        "pass": false
+      },
+      "historical_reference": {
+        "note": "historical reference only; does not gate acceptance",
+        "robust_delta": 0.03462139500944095,
+        "clean_delta": 0.019606128104575182,
+        "blur_2.0_delta": 0.017723412636165614,
+        "family_deltas": {
+          "jpeg": 0.02972538562091509,
+          "blur": 0.019592282352941304,
+          "scale": 0.018014786928104654,
+          "noise": 0.04081889789397242,
+          "color": 0.04939906928104576,
+          "crop": 0.03922877908496736
+        },
+        "gates": {
+          "robust_gain": true,
+          "blur_2.0_guard": true,
+          "clean_guard": true,
+          "all_family_guards": true,
+          "noise_gain": true
+        },
+        "all_pass": true
+      },
+      "accepted": false,
+      "path": "E:\\TikTok TechJam\\outputs\\ensemble_vnext\\historical_alpha_sweep\\alpha_0p60.json"
+    }
+  ],
+  "selected": {
+    "epoch": null,
+    "robust_score": 0.9783143236601308,
+    "robust_delta": 0.033428724101670415,
+    "source_robust_scores": {
+      "CommunityForensics-Small": 0.9855172466666668,
+      "GenImage": 0.9609659600592593,
+      "SID_Set": 0.9676313007407408
+    },
+    "source_robust_deltas": {
+      "CommunityForensics-Small": 0.049908648148148216,
+      "GenImage": 0.04271422008888892,
+      "SID_Set": 0.009567727407407522
+    },
+    "clean_delta": 0.0186959755991285,
+    "gates": {
+      "checks": {
+        "overall_robust_score": {
+          "kind": "absolute",
+          "value": 0.9783143236601308,
+          "limit": 0.9325,
+          "margin": 0.04581432366013083,
+          "pass": true
+        },
+        "cf_robust_score": {
+          "kind": "absolute",
+          "value": 0.9855172466666668,
+          "limit": 0.9239,
+          "margin": 0.06161724666666679,
+          "pass": true
+        },
+        "GenImage_robust_drop": {
+          "kind": "drop",
+          "value": -0.04271422008888892,
+          "limit": 0.003,
+          "margin": 0.045714220088888924,
+          "pass": true
+        },
+        "SID_Set_robust_drop": {
+          "kind": "drop",
+          "value": -0.009567727407407522,
+          "limit": 0.003,
+          "margin": 0.012567727407407522,
+          "pass": true
+        },
+        "clean_drop": {
+          "kind": "drop",
+          "value": -0.0186959755991285,
+          "limit": 0.002,
+          "margin": 0.020695975599128502,
+          "pass": true
+        },
+        "global_jpeg_family_drop": {
+          "kind": "drop",
+          "value": -0.029086096732026223,
+          "limit": 0.003,
+          "margin": 0.032086096732026226,
+          "pass": true
+        },
+        "global_blur_family_drop": {
+          "kind": "drop",
+          "value": -0.018958784604212187,
+          "limit": 0.003,
+          "margin": 0.021958784604212186,
+          "pass": true
+        },
+        "global_scale_family_drop": {
+          "kind": "drop",
+          "value": -0.017898966448801734,
+          "limit": 0.003,
+          "margin": 0.020898966448801733,
+          "pass": true
+        },
+        "global_noise_family_drop": {
+          "kind": "drop",
+          "value": -0.039492252723311694,
+          "limit": 0.003,
+          "margin": 0.042492252723311696,
+          "pass": true
+        },
+        "global_color_family_drop": {
+          "kind": "drop",
+          "value": -0.04624334640522887,
+          "limit": 0.003,
+          "margin": 0.04924334640522887,
+          "pass": true
+        },
+        "global_crop_family_drop": {
+          "kind": "drop",
+          "value": -0.03665811241830075,
+          "limit": 0.003,
+          "margin": 0.03965811241830075,
+          "pass": true
+        },
+        "CommunityForensics-Small_jpeg_family_drop": {
+          "kind": "drop",
+          "value": -0.06888504166666676,
+          "limit": 0.005,
+          "margin": 0.07388504166666676,
+          "pass": true
+        },
+        "CommunityForensics-Small_blur_family_drop": {
+          "kind": "drop",
+          "value": -0.013472259259259212,
+          "limit": 0.005,
+          "margin": 0.018472259259259213,
+          "pass": true
+        },
+        "CommunityForensics-Small_scale_family_drop": {
+          "kind": "drop",
+          "value": -0.013561916666666507,
+          "limit": 0.005,
+          "margin": 0.018561916666666508,
+          "pass": true
+        },
+        "CommunityForensics-Small_noise_family_drop": {
+          "kind": "drop",
+          "value": -0.062447240740740595,
+          "limit": 0.005,
+          "margin": 0.0674472407407406,
+          "pass": true
+        },
+        "CommunityForensics-Small_color_family_drop": {
+          "kind": "drop",
+          "value": -0.03619141666666659,
+          "limit": 0.005,
+          "margin": 0.041191416666666585,
+          "pass": true
+        },
+        "CommunityForensics-Small_crop_family_drop": {
+          "kind": "drop",
+          "value": -0.01932161111111108,
+          "limit": 0.005,
+          "margin": 0.024321611111111082,
+          "pass": true
+        },
+        "GenImage_jpeg_family_drop": {
+          "kind": "drop",
+          "value": -0.0033176888888889478,
+          "limit": 0.005,
+          "margin": 0.008317688888888949,
+          "pass": true
+        },
+        "GenImage_blur_family_drop": {
+          "kind": "drop",
+          "value": -0.029193102222222156,
+          "limit": 0.005,
+          "margin": 0.03419310222222215,
+          "pass": true
+        },
+        "GenImage_scale_family_drop": {
+          "kind": "drop",
+          "value": -0.02785059555555558,
+          "limit": 0.005,
+          "margin": 0.03285059555555558,
+          "pass": true
+        },
+        "GenImage_noise_family_drop": {
+          "kind": "drop",
+          "value": -0.020095810370370337,
+          "limit": 0.005,
+          "margin": 0.025095810370370338,
+          "pass": true
+        },
+        "GenImage_color_family_drop": {
+          "kind": "drop",
+          "value": -0.06919694222222217,
+          "limit": 0.005,
+          "margin": 0.07419694222222217,
+          "pass": true
+        },
+        "GenImage_crop_family_drop": {
+          "kind": "drop",
+          "value": -0.06141425777777787,
+          "limit": 0.005,
+          "margin": 0.06641425777777787,
+          "pass": true
+        },
+        "SID_Set_jpeg_family_drop": {
+          "kind": "drop",
+          "value": -0.003733666666666746,
+          "limit": 0.005,
+          "margin": 0.008733666666666747,
+          "pass": true
+        },
+        "SID_Set_blur_family_drop": {
+          "kind": "drop",
+          "value": 0.0005712592592592713,
+          "limit": 0.005,
+          "margin": 0.004428740740740729,
+          "pass": true
+        },
+        "SID_Set_scale_family_drop": {
+          "kind": "drop",
+          "value": 0.0017206666666667036,
+          "limit": 0.005,
+          "margin": 0.0032793333333332965,
+          "pass": true
+        },
+        "SID_Set_noise_family_drop": {
+          "kind": "drop",
+          "value": -0.014886962962963102,
+          "limit": 0.005,
+          "margin": 0.019886962962963103,
+          "pass": true
+        },
+        "SID_Set_color_family_drop": {
+          "kind": "drop",
+          "value": -0.012752222222222498,
+          "limit": 0.005,
+          "margin": 0.0177522222222225,
+          "pass": true
+        },
+        "SID_Set_crop_family_drop": {
+          "kind": "drop",
+          "value": -0.022526666666666695,
+          "limit": 0.005,
+          "margin": 0.027526666666666696,
+          "pass": true
+        },
+        "noise_family_drop": {
+          "kind": "drop",
+          "value": -0.039492252723311694,
+          "limit": 0.002,
+          "margin": 0.041492252723311696,
+          "pass": true
+        },
+        "blur_2.0_drop": {
+          "kind": "drop",
+          "value": -0.017659844880174247,
+          "limit": 0.002,
+          "margin": 0.01965984488017425,
+          "pass": true
+        }
+      },
+      "failed": [],
+      "pass": true
+    },
+    "historical_reference": {
+      "note": "historical reference only; does not gate acceptance",
+      "robust_delta": 0.033428724101670415,
+      "clean_delta": 0.0186959755991285,
+      "blur_2.0_delta": 0.017659844880174247,
+      "family_deltas": {
+        "jpeg": 0.029086096732026223,
+        "blur": 0.018958784604212187,
+        "scale": 0.017898966448801734,
+        "noise": 0.039492252723311694,
+        "color": 0.04624334640522887,
+        "crop": 0.03665811241830075
+      },
+      "gates": {
+        "robust_gain": true,
+        "blur_2.0_guard": true,
+        "clean_guard": true,
+        "all_family_guards": true,
+        "noise_gain": true
+      },
+      "all_pass": true
+    },
+    "accepted": true,
+    "path": "E:\\TikTok TechJam\\outputs\\ensemble_vnext\\historical_alpha_sweep\\alpha_0p50.json"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "direct": "E:\\TikTok TechJam\\outputs\\ensemble_vnext\\historical_alpha_sweep\\alpha_0p50_predictions.csv",
+  "packaged": "E:\\TikTok TechJam\\outputs\\ensemble_vnext\\packaged_historical\\predictions.csv",
+  "rows": 192000,
+  "key_alignment_exact": true,
+  "static_fields_exact": true,
+  "absolute_tolerance": 0.001,
+  "max_absolute_difference": 0.0009751021862030029,
+  "mean_absolute_difference": 1.7555262081145882e-05,
+  "rows_over_tolerance": 0,
+  "metric_equivalence": {
+    "direct": "E:\\TikTok TechJam\\outputs\\ensemble_vnext\\historical_alpha_sweep\\alpha_0p50.json",
+    "packaged": "E:\\TikTok TechJam\\outputs\\ensemble_vnext\\packaged_historical\\evaluation.json",
+    "absolute_tolerance": 1e-05,
+    "robust_score_difference": 2.7031517813025374e-07,
+    "max_condition_auc_difference": 8.366013073413114e-07,
+    "conditions_over_tolerance": 0
+  }
+}

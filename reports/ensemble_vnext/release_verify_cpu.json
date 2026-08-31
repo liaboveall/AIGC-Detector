@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "checkpoint": "E:\\TikTok TechJam\\weights\\aigc-detector-ensemble-vnext.pt",
+  "sha256": "DE3C8C6E44C445278D6A47A9BC7F9E96B3CC9D02EFA675587F6329D46148587A",
+  "device": "cpu",
+  "alpha": 0.5,
+  "source_sha256": {
+    "model_a": "1AF51D00022B9CD3FABD58D65F01C7F728F6F99C2649AAA86ACDBAA9789EDE44",
+    "model_b": "F49D423847B26F26FAF4C2558F1A831658F0F92DF22F37F56B3E33BA51264DD5"
+  },
+  "parameter_count": {
+    "model_a": 28018018,
+    "model_b": 87567489,
+    "trainable": 0,
+    "total": 115585507
+  },
+  "predictions": 3,
+  "deterministic_repeated_inference": true,
+  "unreadable_fallback": 0.5
+}
