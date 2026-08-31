@@ -11,8 +11,9 @@ import pandas as pd
 import torch
 from PIL import Image
 
-from src.adapter import AdapterModel, adapter_parameter_counts
+from src.adapter import AdapterModel, adapter_parameter_counts, build_checkpoint_model
 from src.data import ManifestImageDataset, RobustnessImageDataset
+from src.ensemble import EnsembleModel, build_ensemble_model, ensemble_parameter_counts
 from src.model import create_model
 from src.transforms import RandomDegradation, RandomLabelIndependentReencode, build_eval_transform
 
@@ -86,6 +87,79 @@ class BaselineTests(unittest.TestCase):
         self.assertEqual(counts["adapter_branch"], 197_121)
         self.assertEqual(counts["trainable"], 197_121)
         self.assertEqual(counts["total"], 28_018_018)
+
+    def test_ensemble_model_forward(self) -> None:
+        model_a = create_model({"name": "convnext_tiny", "pretrained": False, "drop_path": 0.0})
+        model_b = create_model({"name": "convnext_tiny", "pretrained": False, "drop_path": 0.0})
+        images = torch.rand(3, 3, 64, 64)
+        with torch.inference_mode():
+            logits_a = model_a(images).flatten()
+            logits_b = model_b(images).flatten()
+
+            zero_alpha = EnsembleModel(model_a, model_b, alpha=0.0)
+            output_zero = zero_alpha(images)
+            self.assertEqual(tuple(output_zero.shape), (3, 1))
+            self.assertTrue(torch.allclose(output_zero.flatten(), logits_a, atol=1e-6))
+
+            one_alpha = EnsembleModel(model_a, model_b, alpha=1.0)
+            self.assertTrue(torch.allclose(one_alpha(images).flatten(), logits_b, atol=1e-6))
+
+            mixed = EnsembleModel(model_a, model_b, alpha=0.3)
+            expected = 0.7 * logits_a + 0.3 * logits_b
+            self.assertTrue(torch.allclose(mixed(images).flatten(), expected, atol=1e-5))
+
+        counts = ensemble_parameter_counts(mixed)
+        self.assertEqual(counts["trainable"], 0)
+        self.assertEqual(counts["total"], counts["model_a"] + counts["model_b"])
+        for parameter in mixed.parameters():
+            self.assertFalse(parameter.requires_grad)
+        mixed.train(True)
+        self.assertFalse(mixed.training)
+        self.assertFalse(mixed.model_a.training)
+        self.assertFalse(mixed.model_b.training)
+
+        with self.assertRaises(ValueError):
+            EnsembleModel(model_a, model_b, alpha=1.5)
+
+    def test_build_checkpoint_model_ensemble(self) -> None:
+        base_a = create_model({"name": "convnext_tiny", "pretrained": False, "drop_path": 0.0})
+        base_b = create_model({"name": "convnext_tiny", "pretrained": False, "drop_path": 0.0})
+        config_a = {"model": {"name": "convnext_tiny", "pretrained": False}, "data": {"image_size": 224}}
+        config_b = {"model": {"name": "convnext_tiny", "pretrained": False}, "data": {"image_size": 224}}
+        checkpoint = {
+            "config": {
+                "seed": 2026,
+                "device": "auto",
+                "data": {"image_size": 224},
+                "ensemble": {
+                    "enabled": True,
+                    "alpha": 0.25,
+                    "model_a": {"config": config_a},
+                    "model_b": {"config": config_b},
+                },
+            },
+            "model_state": {"model_a": base_a.state_dict(), "model_b": base_b.state_dict()},
+        }
+        model = build_checkpoint_model(checkpoint["config"], checkpoint["model_state"])
+        self.assertIsInstance(model, EnsembleModel)
+        self.assertAlmostEqual(model.alpha, 0.25)
+        images = torch.rand(2, 3, 64, 64)
+        with torch.inference_mode():
+            expected = 0.75 * base_a(images).flatten() + 0.25 * base_b(images).flatten()
+            self.assertTrue(torch.allclose(model(images).flatten(), expected, atol=1e-5))
+
+        with TemporaryDirectory() as temporary:
+            checkpoint_path = Path(temporary) / "ensemble.pt"
+            torch.save(checkpoint, checkpoint_path)
+            reloaded_payload = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+            reloaded = build_ensemble_model(
+                reloaded_payload["config"]["ensemble"], reloaded_payload["model_state"]
+            )
+            with torch.inference_mode():
+                self.assertTrue(torch.allclose(reloaded(images).flatten(), expected, atol=1e-5))
+
+        with self.assertRaisesRegex(ValueError, "model_state is missing"):
+            build_ensemble_model(checkpoint["config"]["ensemble"], {"model_a": base_a.state_dict()})
 
     def test_robustness_dataset(self) -> None:
         with TemporaryDirectory() as temporary:
