@@ -25,7 +25,7 @@ import torch
 import torch.nn.functional as F
 from tqdm import tqdm
 
-from .model import create_model
+from .adapter import build_checkpoint_model
 
 DEFAULT_FROZEN_PREFIXES = ("stem.", "stages.0.", "stages.1.")
 HEAD_PREFIX = "head."
@@ -33,18 +33,17 @@ TRAINABLE_STAGE_PREFIXES = ("stages.2.", "stages.3.")
 
 
 def load_teacher(
-    model_config: dict[str, Any],
     checkpoint_path: str | Path,
     device: torch.device,
 ) -> torch.nn.Module:
-    """Build a same-architecture model, load the checkpoint weights, freeze it."""
+    """Build and freeze the model described by a teacher checkpoint.
+
+    The teacher architecture is intentionally read from its own checkpoint so
+    a larger student can distil from the accepted Tiny detector. Legacy bare
+    checkpoints and adapter-enabled checkpoints are both supported.
+    """
     checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
-    source_name = checkpoint.get("config", {}).get("model", {}).get("name")
-    target_name = model_config.get("name")
-    if source_name and source_name != target_name:
-        raise ValueError(f"Teacher checkpoint model {source_name!r} != config model {target_name!r}")
-    teacher = create_model(model_config, pretrained_override=False)
-    teacher.load_state_dict(checkpoint["model_state"])
+    teacher = build_checkpoint_model(checkpoint["config"], checkpoint["model_state"])
     teacher.to(device)
     if device.type == "cuda":
         teacher.to(memory_format=torch.channels_last)

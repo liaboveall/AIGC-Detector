@@ -1,0 +1,87 @@
+# Base v2 multi-scale repair: the Base-v1 backbone remains bitwise frozen.
+seed: 2026
+device: auto
+
+data:
+  dataset_root: Dataset
+  train_manifest: tiny_vnext_train_balanced_280000.csv
+  val_manifest: validation_modern_combined_selection_12000.csv
+  image_size: 224
+  batch_size: 32
+  num_workers: 4
+  pin_memory: true
+  balanced_sampling: false
+  train_degradation_probability: 0.80
+  train_degradation_kind_weights:
+    jpeg: 12.0
+    blur: 24.0
+    scale: 10.0
+    noise: 18.0
+    color: 8.0
+    crop: 8.0
+  train_blur_weights: [4.0, 6.0, 14.0]
+  train_reencode_probability: 0.35
+  train_reencode_qualities: [50, 65, 80, 95]
+  train_reencode_codecs: [jpeg, webp]
+  max_train_samples: null
+  max_val_samples: null
+
+model:
+  name: convnext_base.fb_in22k_ft_in1k
+  pretrained: false
+  dropout: 0.10
+  drop_path: 0.10
+
+warmstart:
+  checkpoint: outputs/base_v1/primary/epoch_01.pt
+
+adapter:
+  enabled: true
+  kind: multiscale_stats
+  stage_dims: [128, 256, 512, 1024]
+  hidden_dim: 512
+  dropout: 0.0
+  residual_gain: 1.0
+
+repair_training:
+  teacher_checkpoint: outputs/tiny_vnext/final_candidate/tiny_vnext_seed2026_gain1p60.pt
+  repair_sources: [GenImage, SID_Set]
+  protect_sources: [CommunityForensics-Small, SuSy, MS-COCOAI]
+  # Teacher alignment remains the primary target. A wider Huber quadratic
+  # region accelerates the still-large logit mismatch without unbounded MSE.
+  bce_weight: 0.25
+  distill_weight: 1.0
+  distill_delta: 2.0
+  protect_weight: 4.0
+  temperature: 1.0
+  learning_rate: 0.0002
+  weight_decay: 0.01
+  gradient_clip: 1.0
+
+training:
+  epochs: 2
+  max_batches_per_epoch: null
+  max_val_batches: null
+
+validation:
+  conditions:
+    - clean
+    - jpeg_90
+    - jpeg_70
+    - jpeg_50
+    - jpeg_30
+    - blur_0.5
+    - blur_1.0
+    - blur_2.0
+    - scale_0.5
+    - scale_0.25
+    - noise_0.02
+    - noise_0.05
+    - noise_0.10
+    - color_-0.20
+    - color_0.20
+    - crop_0.80
+
+output:
+  directory: outputs/base_v2/multiscale_seed2026
+  save_epoch_checkpoints: true
