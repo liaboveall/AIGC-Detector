@@ -1,57 +1,69 @@
-# Delivery Checklist — v1.0.0
+# Delivery Checklist — Ensemble vNext
 
-This file separates repository-controlled release gates from account-bound Devpost
-actions. The model is frozen; no further training or WildFake-driven tuning belongs in
-this release.
+This checklist separates repository-controlled fusion work from external publication.
+The candidate is frozen at `alpha=0.50`; no further tuning on the recorded evidence
+belongs in this branch.
 
-## Repository-controlled gates
+## Branch and provenance
 
-- [x] Formal checkpoint fixed as Adapter v2 epoch 1.
-- [x] Source checkpoint, read-only backup, and release-staging copy have identical
-  SHA-256 `C5E0C7EC9E39B505A7269826F034969E53340D8CA2C74D60CC9B1868E43F44EC`.
-- [x] Source and backup checkpoints are read-only; legacy base remains available for
-  rollback.
-- [x] Training entry point refuses to write into a non-empty output directory unless
-  the caller explicitly overrides the guard.
-- [x] Adapter-aware loading works while legacy-checkpoint behavior remains compatible.
-- [x] Directory-to-JSON inference emits exactly `image_path` and `pred`.
-- [x] Unreadable-image fallback is 0.5.
-- [x] Unit/pipeline suite passes.
-- [x] Python compile check and all public CLI `--help` entry points pass.
-- [x] Release smoke test passes on CUDA and CPU.
-- [x] Dependency health check passes; verified top-level versions are pinned.
-- [x] README, model card, robustness summary, error analysis, Devpost draft, demo script,
-  dataset documentation, aggregate evidence bundle, and release notes use Adapter v2.
-- [x] Dataset images, private manifests, per-image internal predictions, local planning
-  files, and raw training outputs remain excluded from Git.
-- [x] Public `main` contains the delivery commits.
-- [x] Public `v1.0.0` Release contains the checkpoint and checksum assets.
-- [x] GitHub asset metadata matches the frozen 112,172,235-byte size and SHA-256.
+- [x] Work is isolated on `ensemble-vnext`.
+- [x] Local `main` and `origin/main` remain at `574af66`.
+- [x] Tiny vNext and Base v1 source paths and SHA-256 values are frozen.
+- [x] Alpha selection rule and the rejected `0.60` gate are documented.
+- [x] Consumed confirmation/WildFake data were not reopened.
 
-The final publication checks were completed during the GitHub release step. GitHub's
-asset digest is
-`sha256:c5e0c7ec9e39b505a7269826f034969e53340d8ca2c74d60cc9b1868e43f44ec`,
-matching the source, read-only backup, staging copy, and published checksum manifest.
+## Validation
 
-## Devpost/account-bound actions
+- [x] Historical 12,000-image × 16-condition alpha sweep completed.
+- [x] Alpha `0.50` passed all unchanged Tiny-relative gates.
+- [x] Modern 12,896-image × 16-condition live evaluation completed.
+- [x] Modern macro gain, worst-generator, and worst-condition gates passed.
+- [x] 1,000-replicate grouped-bootstrap lower bound is positive
+  (`0.171015 > 0`).
+- [x] Packaged checkpoint full historical evaluation completed after the final FP32
+  blending fix.
+- [x] Direct/package identities and probabilities pass the recorded numerical
+  equivalence tolerance.
+- [x] Paired CUDA latency evidence recorded for batch sizes 1 and 32.
 
-These require the team owner's identity, media, or authenticated Devpost account and are
-not fabricated by repository automation:
+## Artifact and runtime
 
-- [ ] Confirm the final project title and enter the real team roster/contributions.
-- [ ] Record the three-minute demo with licensed display images using
-  `DEMO_VIDEO_SCRIPT.md`.
-- [ ] Upload the video and add its final URL to Devpost.
-- [ ] Paste/review `DEVPOST_DESCRIPTION.md` within Devpost field limits.
-- [ ] Add the public GitHub repository and `v1.0.0` Release links.
-- [ ] Submit before the competition deadline and save a submission receipt/screenshot.
+- [x] One self-contained checkpoint contains both model states and fixed alpha.
+- [x] Asset size is 462,558,035 bytes.
+- [x] SHA-256 is
+  `DE3C8C6E44C445278D6A47A9BC7F9E96B3CC9D02EFA675587F6329D46148587A`.
+- [x] Parameter count is 115,585,507, below the two-billion cap.
+- [x] Source checkpoint hashes are embedded in metadata.
+- [x] Default `predict.py` checkpoint points to Ensemble vNext.
+- [x] Directory output contains exactly `image_path` and `pred`.
+- [x] Unreadable-image fallback is exactly `0.5`.
+- [x] Final CPU and CUDA release verifiers pass after all runtime changes.
+- [ ] Unit tests, compile checks, dependency check, and
+  `git diff --check` pass.
+- [ ] Fusion checkpoint is committed through Git LFS with metadata and checksum.
+- [ ] Tracked evidence and all current-facing documents match the final candidate.
 
-## Release verification commands
+## External/account-bound actions
+
+These are intentionally not performed or claimed by local repository automation:
+
+- [ ] Review and merge `ensemble-vnext` into `main`.
+- [ ] Push the branch/merge to the public remote.
+- [ ] Choose and create a public release tag.
+- [ ] Upload or verify the public GitHub release asset.
+- [ ] Confirm the real team roster and contribution statements.
+- [ ] Record/upload the demo video and add its final URL.
+- [ ] Paste/review the Devpost text and submit before the real deadline.
+- [ ] Save the official submission receipt or screenshot.
+
+## Final verification commands
 
 ```powershell
+git lfs pull
 python test.py
-python scripts/verify_release.py --device cuda
-python scripts/verify_release.py --device cpu
+python scripts/verify_ensemble_release.py --device cuda
+python scripts/verify_ensemble_release.py --device cpu
+python -m compileall -q src scripts train.py train_adapter.py evaluate.py predict.py
 python -m pip check
 git diff --check
 ```

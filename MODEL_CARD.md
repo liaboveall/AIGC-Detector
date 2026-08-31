@@ -1,82 +1,105 @@
-# Model Card — AIGC Detector Adapter v2
+# Model Card — AIGC Detector Ensemble vNext
 
 ## Model details
 
-- Release: `v1.0.0`
-- Asset: `aigc-detector-adapter-v2.pt`
-- SHA-256: `C5E0C7EC9E39B505A7269826F034969E53340D8CA2C74D60CC9B1868E43F44EC`
-- Architecture: ConvNeXt-Tiny binary classifier plus residual MLP adapter
-  (`768 -> 256 -> 1`)
-- Parameters: 28,018,018 total; 197,121 adapter parameters
-- Input: RGB images resized/cropped to 224×224 by the repository transform
-- Output: one sigmoid score in `[0, 1]`, where higher means more likely AI-generated
-- Documented binary-demo threshold: 0.209
+- Status: frozen candidate on branch `ensemble-vnext`
+- Asset: `aigc-detector-ensemble-vnext.pt`
+- SHA-256: `DE3C8C6E44C445278D6A47A9BC7F9E96B3CC9D02EFA675587F6329D46148587A`
+- Architecture: fixed 0.50/0.50 logit blend of:
+  - ConvNeXt-Tiny plus a `768 -> 256 -> 1` residual adapter, gain `1.60`
+  - ConvNeXt-Base `convnext_base.fb_in22k_ft_in1k`
+- Parameters: 115,585,507 total; 0 trainable during inference
+- Input: RGB images transformed to 224 × 224
+- Output: one sigmoid probability in `[0, 1]`, where higher means more likely
+  AI-generated
+- Binary threshold: none newly validated for this ensemble
+
+Both source model states, source hashes, and the fixed alpha are embedded in one
+self-contained checkpoint. The loader freezes both members and keeps them in evaluation
+mode.
 
 ## Intended use
 
 Research, education, and hackathon demonstration of robust AI-generated-image
-detection under deterministic JPEG, blur, resize, noise, color, and crop transforms.
-The preferred interface is `predict.py`, which emits continuous scores for a directory.
+detection under JPEG, blur, resize, noise, color, and crop transformations. The
+preferred interface is `predict.py`, which emits continuous scores for a directory.
 
 ## Out-of-scope use
 
-- Treating a score as proof of authorship, fraud, or misconduct.
+- Treating the score as proof of authorship, fraud, or misconduct.
 - High-stakes automated moderation without human review and target-domain validation.
 - Claiming universal generator coverage or authenticity guarantees.
-- Recalibrating or selecting new checkpoints on the recorded WildFake observation.
-- Commercial use without reviewing every upstream dataset's terms.
+- Selecting, calibrating, or tuning on the already observed confirmation/WildFake data.
+- Applying the historical Adapter v2 threshold `0.209` to the ensemble without a new,
+  independent calibration set.
+- Commercial use without reviewing all upstream dataset and checkpoint terms.
 
-## Training data summary
+## Source models and data
 
-The final adapter uses a 560,000-row balanced replay manifest:
+| Member | Weight | Parameters | Source SHA-256 |
+|---|---:|---:|---|
+| Tiny vNext adapter | 0.50 | 28,018,018 | `1AF51D…EDE44` |
+| Base v1 | 0.50 | 87,567,489 | `F49D42…64DD5` |
 
-| Source | Rows | Share |
-|---|---:|---:|
-| CommunityForensics-Small | 280,000 | 50% |
-| GenImage | 140,000 | 25% |
-| SID_Set | 140,000 | 25% |
-
-Each source is internally balanced between real and fake labels. CommunityForensics
-generator identities are split disjointly between train, selection, and confirmation.
-Image bodies are not included in this repository.
+The embedded configurations record the balanced 280,000-row
+`tiny_vnext_train_balanced_280000.csv` manifest for both members, with the six
+degradation families and label-independent recompression augmentation. Dataset image
+bodies and private manifests are not included in the repository.
 
 ## Evaluation summary
 
-Internal development selection (12,000 images × 16 conditions): robust score 0.942425,
-clean AUC 0.973125, mean degraded AUC 0.950238, worst degraded AUC 0.911173. The model
-passed all 31 pre-registered acceptance checks.
+Historical 12,000-image development selection anchor, 16 conditions:
 
-One-time post-freeze WildFake observation (13,841 images × 16 conditions): robust score
-0.908171, clean AUC 0.964738, mean degraded AUC 0.929697, worst AUC 0.822067. WildFake
-contains COCO real images and DALL-E 3 Advanced fake images only and is not an official
-hidden-test result.
+- robust score: `0.944886 -> 0.978314`
+- clean AUC: `0.972336 -> 0.991032`
+- worst degraded AUC: `0.916339 -> 0.961712`
+- CommunityForensics / GenImage / SID_Set robust deltas:
+  `+0.049909 / +0.042714 / +0.009568`
+- alpha `0.50` passed all unchanged Tiny-relative gates; `0.60` was rejected
 
-See [`reports/final_adapter_v2/`](reports/final_adapter_v2/README.md) for aggregate raw
-tables and evidence boundaries.
+Source-disjoint modern development set, 12,896 images × 16 conditions:
+
+- global robust score: `0.740077 -> 0.901913`
+- clean AUC: `0.850770 -> 0.958501`
+- generator-macro robust score: `0.718331 -> 0.894738`
+- worst-generator robust score: `0.548970 -> 0.796370`
+- worst generator-condition AUC: `0.322516 -> 0.648097`
+- 1,000-replicate grouped-bootstrap macro-gain 95% CI: `[0.171015, 0.182232]`
+- all 16 global condition AUCs improved
+
+The historical confirmation split and WildFake were not reopened. Therefore this model
+has strong development evidence but no new sealed, official-hidden-test, or external
+generator claim. See [`reports/ensemble_vnext/`](reports/ensemble_vnext/README.md).
 
 ## Limitations and risks
 
-- Severe blur produces a high authentic-image false-positive rate.
-- Strong noise and cropping reduce fake recall.
-- Strong JPEG compression shifts score calibration even when AUC remains high.
-- Content and semantic priors can produce persistent false positives/negatives.
-- Generators, cameras, editing pipelines, languages, regions, and content types outside
-  the evaluated data may behave differently.
-- The development selection split influenced model choice. The earlier confirmation set
-  was consumed by a rejected candidate and did not independently test Adapter v2.
+- Strong additive noise is the weakest global condition.
+- Midjourney v1/v2 under `noise_0.05` is the weakest evaluated generator-condition
+  pair; Midjourney v6 has the lowest generator-level robust score.
+- A two-network ensemble increases latency, memory use, and artifact size.
+- Paired RTX 4080 Laptop measurements: batch 1 `5.01 -> 13.87 ms`; batch 32
+  `27.57 -> 92.88 ms`.
+- Content, camera, codec, semantic, and acquisition-pipeline shortcuts may affect
+  predictions.
+- Unseen generators, editing pipelines, regions, and content categories can behave
+  differently.
+- AUC improvements do not guarantee calibrated probabilities or fixed-threshold
+  accuracy.
 
-Outputs should be interpreted as uncertain model scores, not factual authenticity
-certificates. Human review and domain-specific validation remain necessary.
+Outputs are uncertain model scores, not factual authenticity certificates.
 
 ## Reproducibility
 
-Top-level dependency versions are pinned in `requirements.txt`. Download the frozen
-asset from the GitHub `v1.0.0` release, verify `weights/SHA256SUMS.txt`, and run:
+The LFS checkpoint is hash-pinned in `weights/SHA256SUMS.txt`. Run:
 
 ```powershell
+git lfs pull
 python test.py
-python scripts/verify_release.py
+python scripts/verify_ensemble_release.py --device cuda
+python scripts/verify_ensemble_release.py --device cpu
 ```
 
-Training reproduction additionally requires the upstream datasets and private manifests
-documented in `Dataset/README_DATASET.md`.
+The exact alpha-selection and evidence protocol is in
+[`docs/ENSEMBLE_VNEXT.md`](docs/ENSEMBLE_VNEXT.md). Training reproduction requires
+the upstream datasets and private manifests documented in
+`Dataset/README_DATASET.md`.

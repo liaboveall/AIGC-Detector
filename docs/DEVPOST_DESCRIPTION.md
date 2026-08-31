@@ -1,170 +1,100 @@
-# Devpost Project Description — Copy-ready Draft
+# Devpost Description — Ensemble vNext Draft
 
-The technical content below is final for the frozen `v1.0.0` release. Team roster,
-submission URL, and uploaded video are Devpost account fields and are intentionally not
-invented in this repository.
-
-## Project name
-
-**Robust AIGC Image Detector**
-
-## One-line summary
-
-A compact ConvNeXt detector with a residual domain adapter that distinguishes authentic
-from AI-generated images after JPEG compression, blur, resizing, noise, color shifts,
-and cropping.
+This technical text matches the frozen `ensemble-vnext` branch. Team names, real
+contributions, repository/release URLs, media, and submission metadata must be supplied
+by the team owner.
 
 ## Inspiration
 
-AI-image detection is easy to overestimate when evaluation uses clean images from the
-same generators as training. Real sharing pipelines recompress, resize, filter, and crop
-content, while new generators arrive continuously. TikTok TechJam Track 5 asks for a
-detector that remains useful under those transformations rather than one that wins only
-on clean laboratory data.
-
-Our earliest SID-only model looked strong in-domain but reached only about 0.65 clean
-AUC on the WildFake demo subset. That failure changed the project: generator coverage,
-evaluation discipline, and protection against dataset shortcuts became first-class
-design requirements.
+AI-image detection often looks strong on clean images and then fails after ordinary
+platform transformations. JPEG recompression, blur, resize, noise, color changes, and
+crop can remove forensic traces or shift a model's score distribution. We built a
+detector and evaluation protocol around those real deployment failures rather than a
+single clean benchmark.
 
 ## What it does
 
-The submission accepts a directory, recursively decodes common image formats, and emits
-a JSON array of continuous scores:
+The project recursively scores supported images and returns one continuous probability:
 
 ```json
-[{"image_path": "folder/example.jpg", "pred": 0.9731}]
+[
+  {"image_path": "subfolder/example.jpg", "pred": 0.9731}
+]
 ```
 
-Scores near 0 indicate authentic and scores near 1 indicate AI-generated. Unreadable
-supported files receive a neutral 0.5 rather than crashing the batch. The repository
-also contains a deterministic 16-condition evaluation harness covering the complete
-Track 5 transformation suite.
+Higher scores mean more likely AI-generated. Unreadable files receive a neutral `0.5`
+instead of terminating the batch.
 
 ## How we built it
 
-### 1. Multi-source forensic base
+The final candidate is a fixed logit-space ensemble:
 
-We trained ConvNeXt-Tiny across SID_Set and a multi-generator GenImage subset, then
-repaired heavy-blur behavior. Moving from a single source to multiple sources produced
-the largest generalization gain: WildFake clean AUC rose from approximately 0.646 to
-0.961 before the final adaptation stage.
+```text
+image
+  ├─ Tiny vNext adapter ─┐
+  └─ ConvNeXt Base v1 ──┴─ 0.50 / 0.50 FP32 logit blend ─ sigmoid ─ score
+```
 
-### 2. Modern-generator coverage with leakage controls
+The 28.0M-parameter Tiny member preserves the strongest historical cross-source
+behavior. The 87.6M-parameter Base member contributes complementary evidence for newer
+generators. The complete 115.6M-parameter model is frozen and packaged in one
+hash-pinned checkpoint; inference performs no training, calibration, or test-time
+adaptation.
 
-We acquired all 186 CommunityForensics-Small shards and exported 553,531 usable images
-covering 4,780 fake-generator identities. Exact SHA-256 checks, WildFake exact/perceptual
-overlap exclusion, NSFW exclusion, and generator-disjoint train/selection/confirmation
-splits were applied before training.
+We evaluate clean plus 15 deterministic degradations. The robustness score gives 80%
+weight to mean degraded AUC and 20% to the worst degraded AUC. Source and
+degradation-family guards prevent a large model from winning globally while silently
+regressing an older dataset.
 
-The final replay manifest contains 560,000 samples, balanced real/fake and composed of
-50% CommunityForensics-Small, 25% GenImage, and 25% SID_Set.
+## Fusion decision
 
-### 3. Rejecting shortcuts and catastrophic forgetting
+On the historical 12,000-image development anchor, alpha values from 0.10 to 0.50
+passed. Alpha 0.60 achieved a slightly higher overall score but was rejected because
+its SID_Set scale-family drop exceeded the frozen limit
+(`0.005079 > 0.005000`). We selected and froze alpha 0.50.
 
-A modern-only full-model fine-tune almost perfectly learned its new source but collapsed
-on GenImage and SID_Set. Replay-only, knowledge distillation, and model-soup candidates
-also produced tempting headline scores while failing one or more pre-registered
-source-by-degradation safeguards.
+| Historical metric | Tiny vNext | Ensemble |
+|---|---:|---:|
+| Robust score | 0.944886 | **0.978314** |
+| Clean AUC | 0.972336 | **0.991032** |
+| Worst degraded AUC | 0.916339 | **0.961712** |
 
-The accepted solution freezes the 27.82M-parameter ConvNeXt base and trains a small
-197,121-parameter residual MLP. CommunityForensics examples optimize final-label BCE;
-GenImage and SID examples penalize non-zero residuals, preserving the old detector's
-behavior. Fifteen percent label-independent JPEG/WebP re-encoding reduces reliance on
-historical label/codec correlations.
+We then ran the frozen alpha on a 12,896-image source-disjoint modern development set:
 
-### 4. Robustness-aware acceptance
+| Modern metric | Tiny vNext | Ensemble |
+|---|---:|---:|
+| Global robust score | 0.740077 | **0.901913** |
+| Clean AUC | 0.850770 | **0.958501** |
+| Generator-macro robust score | 0.718331 | **0.894738** |
+| Worst-generator robust score | 0.548970 | **0.796370** |
+| Worst generator-condition AUC | 0.322516 | **0.648097** |
 
-We select with `0.8 * mean degraded AUC + 0.2 * worst degraded AUC`, not clean accuracy.
-The final candidate had to pass 31 pre-registered checks covering overall score, modern
-generator improvement, old-source retention, clean performance, every global
-degradation family, and every source-by-family combination.
+All 16 global condition AUCs improved. A 1,000-replicate content-group bootstrap gave
+a generator-macro gain 95% interval of `[0.171015, 0.182232]`.
 
-## Results
+## Challenges and lessons
 
-### Internal 12,000-image selection set, 16 conditions
+Other Base-only candidates also failed preservation gates. The useful lesson was that
+capacity alone did not solve domain shift; complementary models plus strict regression
+guards did.
 
-- Robust score: **0.9424** (base 0.9305).
-- Clean AUC: **0.9731** (base 0.9656).
-- Mean degraded AUC: **0.9502** (base 0.9400).
-- Worst degraded AUC: **0.9112** (base 0.8925).
-- CommunityForensics robust score: **0.9284** (+0.0245).
-- GenImage and SID robust changes: -0.0006 and -0.0004.
-- Acceptance gates: **31/31 passed**.
+Packaging introduced another subtle issue: CUDA autocast initially blended half-
+precision logits, while the direct sweep blended FP32 logits. We made the production
+wrapper explicitly promote both logits before arithmetic and added direct/package
+equivalence checks.
 
-### WildFake one-time observation after freeze
+## Limitations
 
-- Clean AUC: **0.9647**.
-- Mean degraded AUC: **0.9297**.
-- Worst condition (`blur_2.0`): **0.8221**.
-- Robust score: **0.9082** (base 0.9047).
-- Mean balanced accuracy at threshold 0.209: **0.8400** (base 0.8341).
-- All 16 condition AUC and balanced-accuracy values were non-decreasing versus the base.
+Strong noise remains the global bottleneck. Midjourney v1/v2 under `noise_0.05` is the
+weakest generator-condition pair. The ensemble is larger and slower than Tiny vNext,
+and its probabilities have not been recalibrated on a new independent set.
 
-WildFake contains 4,998 COCO real and 8,843 DALL-E 3 Advanced images. It was used once,
-only after checkpoint and threshold freeze, and never fed back into training or model
-selection. It is demonstration evidence, not an official final score.
-
-## Accomplishments we are proud of
-
-- Solved the catastrophic-forgetting failure without expanding to a large backbone.
-- Added only 0.70% parameters while keeping batch-32 inference overhead near 0.6%.
-- Improved all 16 global internal AUC conditions and did not regress any WildFake
-  condition versus the base.
-- Built deterministic acquisition, manifest, leakage, compression-history, threshold,
-  robustness, and release-verification tooling.
-- Preserved rejected experiments and evidence boundaries instead of selecting only the
-  most flattering scalar result.
-
-## Challenges
-
-### Cross-generator generalization
-
-High in-domain performance did not transfer automatically. More model capacity would
-not have fixed the source mismatch; diverse training sources did.
-
-### Modern adaptation versus old knowledge
-
-The strongest modern-only and Replay+KD candidates sacrificed narrow old-source
-degradation behavior. The frozen-base residual adapter produced a better multi-objective
-trade-off than continued full-model fine-tuning.
-
-### Ranking versus operating threshold
-
-At JPEG q30, WildFake AUC remains 0.9811 while balanced accuracy at threshold 0.209 is
-0.7676. The model still ranks well, but recompression shifts fake scores downward. We
-therefore emit continuous scores and document the binary operating point honestly.
-
-## What we learned
-
-Generator coverage contributed more than a larger backbone was likely to contribute at
-this stage. Robust evaluation must also be source-aware: a global average can hide a
-small but meaningful regression for one dataset and one degradation family.
-
-We also learned that a sealed validation set is a consumable resource. Our 16,000-image
-confirmation set was opened once for an earlier model-soup candidate; that candidate
-failed, and we did not reuse the set for the adapter. The final evidence statement
-explicitly preserves that limitation.
-
-## What's next
-
-The frozen release is the submission model. Further research will start only with a new
-development split and a new untouched final test. The highest-value directions are:
-
-1. new authentic and modern-generator coverage with license and leakage controls;
-2. multi-scale or frequency-domain features for severe blur;
-3. better target-domain calibration for compressed-score shift;
-4. controlled backbone/semantic-feature comparisons after the current method is fully
-   reproduced.
+The historical confirmation set and WildFake had already been consumed in earlier
+project stages, so we did not reopen them. These are internal development results, not
+an official hidden-test or universal-generator claim. The output should support human
+review, not act as proof of image origin.
 
 ## Built with
 
-Python, PyTorch, torchvision, timm, pandas, scikit-learn, Pillow, PyYAML, Hugging Face
-datasets, PyArrow, TensorBoard, tqdm, conda, Git, and GitHub Releases.
-
-## Supporting material
-
-- [`ROBUSTNESS_SUMMARY.md`](ROBUSTNESS_SUMMARY.md)
-- [`ERROR_ANALYSIS.md`](ERROR_ANALYSIS.md)
-- [`DEMO_VIDEO_SCRIPT.md`](DEMO_VIDEO_SCRIPT.md)
-- [`../reports/final_adapter_v2/`](../reports/final_adapter_v2/README.md)
+Python, PyTorch, timm, scikit-learn, Pillow, pandas, NumPy, Git LFS, deterministic
+robustness transforms, grouped bootstrap validation, and SHA-256 provenance checks.

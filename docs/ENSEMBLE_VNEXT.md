@@ -2,7 +2,7 @@
 
 Branch: `ensemble-vnext`
 
-Status: alpha frozen at `0.50`; formal validation in progress.
+Status: alpha frozen at `0.50`; all repository-controlled fusion gates passed.
 
 ## Evidence boundary
 
@@ -56,28 +56,37 @@ the one with the highest overall robust score was selected.
 
 The `0.60` gate is not relaxed despite its slightly higher overall score.
 
-## Remaining formal gates
+## Formal validation outcome
 
 ### Modern development
 
-Run the full 12,896-image, 16-condition manifest for the frozen alpha only.
-All checks must pass:
+The full 12,896-image, 16-condition manifest was run for the frozen alpha only.
+All checks passed:
 
-- generator-macro robust gain at least `0.005`
-- worst-generator robust score does not regress
-- worst generator-condition AUC does not regress
-- 1,000-replicate content-group bootstrap 95% lower bound is above zero
+- generator-macro robust gain: `+0.176407` (minimum `+0.005`)
+- worst-generator robust delta: `+0.247400`
+- worst generator-condition AUC delta: `+0.325581`
+- 1,000-replicate content-group bootstrap 95% interval:
+  `[0.171015, 0.182232]`
 
 ### Packaged checkpoint
 
-- one self-contained checkpoint with both source states and alpha `0.50`
-- source hashes embedded in checkpoint metadata
-- exact parameter count below two billion
-- packaged evaluation numerically agrees with the direct alpha sweep
-- directory-to-JSON output contains exactly `image_path` and `pred`
-- unreadable images produce the documented neutral `0.5` fallback
-- CPU and CUDA release smoke tests pass
-- SHA-256 and latency evidence are recorded
+- one self-contained 462,558,035-byte checkpoint with both source states and
+  alpha `0.50`: pass
+- source hashes embedded in checkpoint metadata: pass
+- 115,585,507 parameters, below two billion: pass
+- 192,000 direct/package prediction rows align; maximum probability difference
+  `0.000975` within `1e-3`: pass
+- robust-score difference `2.70e-7`; maximum condition-AUC difference
+  `8.37e-7`: pass
+- directory-to-JSON output contains exactly `image_path` and `pred`: pass
+- unreadable images produce the documented neutral `0.5` fallback: pass
+- CPU and CUDA release smoke tests: pass
+- SHA-256 and paired batch-1/batch-32 latency evidence: recorded
+
+The final artifact SHA-256 is
+`DE3C8C6E44C445278D6A47A9BC7F9E96B3CC9D02EFA675587F6329D46148587A`.
+Tracked evidence is under `reports/ensemble_vnext/`.
 
 ### Rollback
 
