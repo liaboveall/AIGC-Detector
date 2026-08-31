@@ -111,13 +111,20 @@ def adapter_enabled(config: dict[str, Any]) -> bool:
 
 
 def build_checkpoint_model(
-    config: dict[str, Any], model_state: dict[str, torch.Tensor] | None = None
+    config: dict[str, Any], model_state: dict[str, Any] | None = None
 ) -> torch.nn.Module:
     """Construct the model described by a checkpoint config.
 
     Old checkpoints (no ``adapter`` key) follow the original
-    ``create_model`` path unchanged.
+    ``create_model`` path unchanged. Checkpoints with ``ensemble.enabled``
+    build a frozen fixed-weight logit blend of two sub-checkpoints instead
+    (see ``src/ensemble.py``); this is checked first because an ensemble
+    checkpoint's top-level config has no single ``model`` entry of its own.
     """
+    if config.get("ensemble", {}).get("enabled", False):
+        from .ensemble import build_ensemble_model
+
+        return build_ensemble_model(config["ensemble"], model_state)
     base = create_model(config["model"], pretrained_override=False)
     if adapter_enabled(config):
         adapter_config = config["adapter"]

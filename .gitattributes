@@ -1,0 +1,1 @@
+weights/aigc-detector-ensemble-vnext.pt filter=lfs diff=lfs merge=lfs -text
