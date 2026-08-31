@@ -1,7 +1,7 @@
 # Base v3 controlled restart outcome
 
-Date: 2026-08-31  
-Branch: `base-v3`  
+Date: 2026-08-31
+Branch: `base-v3`
 Preregistration: `docs/BASE_V3_PREREGISTRATION.md`
 
 ## Verdict

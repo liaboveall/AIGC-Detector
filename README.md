@@ -150,6 +150,9 @@ the private image trees and manifests described in
 - [`docs/ROBUSTNESS_SUMMARY.md`](docs/ROBUSTNESS_SUMMARY.md) — validation breakdown
 - [`docs/ERROR_ANALYSIS.md`](docs/ERROR_ANALYSIS.md) — current failure analysis
 - [`reports/ensemble_vnext/`](reports/ensemble_vnext/README.md) — tracked fusion evidence
+- [`docs/TINY_VNEXT_RESULTS.md`](docs/TINY_VNEXT_RESULTS.md) — accepted Tiny member lineage
+- [`reports/base_v1_primary.md`](reports/base_v1_primary.md) — selected Base member evidence
+- [`reports/base_v3_outcome.md`](reports/base_v3_outcome.md) — rejected Base restart evidence
 - [`reports/final_adapter_v2/`](reports/final_adapter_v2/README.md) — historical v1.0.0 evidence
 - `predict.py` — directory-to-JSON inference entry point
 - `evaluate.py` — deterministic robustness evaluation entry point
