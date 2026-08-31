@@ -38,10 +38,10 @@ belongs in this branch.
 - [x] Directory output contains exactly `image_path` and `pred`.
 - [x] Unreadable-image fallback is exactly `0.5`.
 - [x] Final CPU and CUDA release verifiers pass after all runtime changes.
-- [ ] Unit tests, compile checks, dependency check, and
+- [x] Unit tests, compile checks, dependency check, and
   `git diff --check` pass.
-- [ ] Fusion checkpoint is committed through Git LFS with metadata and checksum.
-- [ ] Tracked evidence and all current-facing documents match the final candidate.
+- [x] Fusion checkpoint is committed through Git LFS with metadata and checksum.
+- [x] Tracked evidence and all current-facing documents match the final candidate.
 
 ## External/account-bound actions
 
@@ -63,7 +63,9 @@ git lfs pull
 python test.py
 python scripts/verify_ensemble_release.py --device cuda
 python scripts/verify_ensemble_release.py --device cpu
-python -m compileall -q src scripts train.py train_adapter.py evaluate.py predict.py
+python -m compileall -q src scripts train.py train_adapter.py `
+  train_base_v3.py train_repair_adapter.py train_replay_distill.py `
+  evaluate.py predict.py test.py
 python -m pip check
 git diff --check
 ```
