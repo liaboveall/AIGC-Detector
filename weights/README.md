@@ -1,32 +1,35 @@
 # Frozen model weights
 
-The release checkpoint is distributed as a GitHub Release asset rather
-than committed to Git:
+## Ensemble vNext
+
+The current branch commits the self-contained fusion checkpoint through Git LFS:
+
+- Asset: `aigc-detector-ensemble-vnext.pt`
+- Size: 462,558,035 bytes
+- SHA-256: `B3A2002C6C297D6382D88B0BA83C4059CE75BBA01C14049A26D3CF45D074DC4B`
+- Composition: 0.50 Tiny vNext logit + 0.50 Base v1 logit
+- Parameters: 115,585,507
+
+```powershell
+git lfs pull
+Get-FileHash weights/aigc-detector-ensemble-vnext.pt -Algorithm SHA256
+python scripts/verify_ensemble_release.py --device cuda
+python scripts/verify_ensemble_release.py --device cpu
+```
+
+Load the checkpoint through `predict.py`, `evaluate.py`, or
+`src.adapter.build_checkpoint_model`. The embedded source paths are provenance only;
+inference does not require separate member checkpoint files.
+
+## Published rollback release
+
+The earlier Adapter v2 checkpoint remains available from the public `v1.0.0` release:
 
 - Release: <https://github.com/liaboveall/AIGC-Detector/releases/tag/v1.0.0>
 - Asset: `aigc-detector-adapter-v2.pt`
 - Size: 112,172,171 bytes
 - SHA-256: `17FE0D53D4264D93485F91BF11E24733A637280324889E2920B168BC1C7999DE`
 
-Download it into this directory:
-
-```powershell
-Invoke-WebRequest `
-  https://github.com/liaboveall/AIGC-Detector/releases/download/v1.0.0/aigc-detector-adapter-v2.pt `
-  -OutFile weights/aigc-detector-adapter-v2.pt
-```
-
-Then verify both the checksum and the inference contract:
-
-```powershell
-Get-FileHash weights/aigc-detector-adapter-v2.pt -Algorithm SHA256
-python scripts/verify_release.py
-```
-
-The checkpoint contains both the frozen ConvNeXt-Tiny base and the trained residual
-adapter. Load it only through the repository's adapter-aware `predict.py`, `evaluate.py`,
-or `src.adapter.build_checkpoint_model` path.
-
-The source datasets are not redistributed. Use of the checkpoint remains subject to
-the terms of the datasets described in the project README, including the
-CommunityForensics-Small CC-BY-NC-SA-4.0 terms.
+Both expected digests are listed in `SHA256SUMS.txt`. Dataset images are not
+redistributed; checkpoint use remains subject to the upstream dataset terms described
+in the project README.
