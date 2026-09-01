@@ -1,8 +1,9 @@
 # Ensemble vNext freeze protocol
 
-Branch: `ensemble-vnext`
+Release: `v2.0.0`; default branch: `main`
 
-Status: alpha frozen at `0.50`; all repository-controlled fusion gates passed.
+Status: alpha frozen at `0.50`; all repository-controlled fusion gates passed and the
+checkpoint is the default public release.
 
 ## Evidence boundary
 

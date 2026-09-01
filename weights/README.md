@@ -1,14 +1,16 @@
 # Frozen model weights
 
-## Ensemble vNext
+## Ensemble vNext — v2.0.0
 
-The current branch commits the self-contained fusion checkpoint through Git LFS:
+The current public release commits the self-contained fusion checkpoint through Git
+LFS and mirrors it as a GitHub release asset:
 
 - Asset: `aigc-detector-ensemble-vnext.pt`
 - Size: 462,558,035 bytes
 - SHA-256: `B3A2002C6C297D6382D88B0BA83C4059CE75BBA01C14049A26D3CF45D074DC4B`
 - Composition: 0.50 Tiny vNext logit + 0.50 Base v1 logit
 - Parameters: 115,585,507
+- Release: <https://github.com/liaboveall/AIGC-Detector/releases/tag/v2.0.0>
 
 ```powershell
 git lfs pull

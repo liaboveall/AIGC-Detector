@@ -104,10 +104,18 @@ python scripts/build_tiny_vnext_manifests.py --total-train 280000 --seed 2026
 
 Pinned sources:
 
-- SuSy: `aminasifar1/SuSy-Dataset` at
+- [SuSy](https://huggingface.co/datasets/aminasifar1/SuSy-Dataset):
+  `aminasifar1/SuSy-Dataset` at
   `df5f324e4438cddaaf0de87f231c356b47aa555d`.
-- MS-COCOAI/Defactify: `Rajarshi-Roy-research/Defactify_Image_Dataset` at
+- [MS-COCOAI/Defactify](https://huggingface.co/datasets/Rajarshi-Roy-research/Defactify_Image_Dataset):
+  `Rajarshi-Roy-research/Defactify_Image_Dataset` at
   `787334f7857fa54f29027a7f09c30e895ad486ef`.
+- [CommunityForensics-Small](https://huggingface.co/datasets/OwensLab/CommunityForensics-Small)
+  at `6c539a534c07917307c381f5af4053c6091b5278`.
+- [GenImage Arrow export](https://huggingface.co/datasets/nebula/GenImage-arrow)
+  at `3f4b9f921a673be09a93b335ed728cea0c6ecf33`; review the
+  [GenImage license](https://github.com/GenImage-Dataset/GenImage/blob/main/License)
+  before download or use.
 
 Download receipts and preparation summaries live inside each local dataset directory.
 MS-COCOAI's dataset card did not declare a license at the pinned revision; it was
