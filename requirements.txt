@@ -1,4 +1,4 @@
-# Versions verified for v1.0.0 and the ensemble-vNext candidate through 2026-09-01.
+# Versions verified for the v2.0.0 Ensemble vNext release on 2026-09-01.
 # Install the appropriate PyTorch CUDA/CPU wheel for your platform first if needed.
 torch==2.13.0
 torchvision==0.28.0
