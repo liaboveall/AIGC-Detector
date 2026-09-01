@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/liaboveall/AIGC-Detector/security/advisories/new
+    about: Report security-sensitive issues privately.
+  - name: Usage and limitations
+    url: https://github.com/liaboveall/AIGC-Detector/blob/main/MODEL_CARD.md
+    about: Review intended use, evidence boundaries, and known limitations first.

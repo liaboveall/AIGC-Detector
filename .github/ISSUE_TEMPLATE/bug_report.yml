@@ -1,0 +1,55 @@
+name: Bug report
+description: Report a reproducible problem in inference, evaluation, or tooling.
+title: "[Bug]: "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not upload private images, credentials, restricted datasets, or large checkpoints.
+        Security-sensitive reports belong in private vulnerability reporting.
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: Provide a release tag or full commit SHA.
+      placeholder: v2.0.0
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Include OS, Python, PyTorch, device, and CUDA version when relevant.
+      placeholder: Windows 11, Python 3.14, PyTorch 2.13, RTX 4080
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Provide the smallest commands or code that reproduce the problem.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior and logs
+      description: Remove local secrets and private paths before pasting logs.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission checks
+      options:
+        - label: I searched existing issues for the same problem.
+          required: true
+        - label: I removed credentials, private images, and restricted data.
+          required: true
