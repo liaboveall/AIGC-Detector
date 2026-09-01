@@ -1,9 +1,8 @@
 # Changelog
 
-## Ensemble vNext candidate — 2026-09-01
+## v2.0.0 — 2026-09-01
 
-Completed on branch `ensemble-vnext`; not yet merged, tagged, pushed, or published as
-a new public release.
+Promote Ensemble vNext to the public default release.
 
 ### Model
 
@@ -11,7 +10,7 @@ a new public release.
 - Package both states and provenance in one 115,585,507-parameter Git LFS asset.
 - Record SHA-256
   `DE3C8C6E44C445278D6A47A9BC7F9E96B3CC9D02EFA675587F6329D46148587A`.
-- Keep the published Adapter v2 asset as the rollback release.
+- Keep the v1.0.0 Adapter v2 asset as the rollback release.
 
 ### Evidence
 

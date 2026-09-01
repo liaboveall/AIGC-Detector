@@ -1,13 +1,13 @@
 # Delivery Checklist — Ensemble vNext
 
-This checklist separates repository-controlled fusion work from external publication.
-The candidate is frozen at `alpha=0.50`; no further tuning on the recorded evidence
-belongs in this branch.
+This checklist separates the completed public repository release from account-bound
+competition submission actions. The model is frozen at `alpha=0.50`; no further tuning
+on the recorded evidence belongs in this release.
 
 ## Branch and provenance
 
-- [x] Work is isolated on `ensemble-vnext`.
-- [x] Local `main` and `origin/main` remain at `574af66`.
+- [x] Fusion work was completed and reviewed on `ensemble-vnext`.
+- [x] The verified fusion history is promoted to the public `main` branch.
 - [x] Tiny vNext and Base v1 source paths and SHA-256 values are frozen.
 - [x] Alpha selection rule and the rejected `0.60` gate are documented.
 - [x] Consumed confirmation/WildFake data were not reopened.
@@ -43,15 +43,13 @@ belongs in this branch.
 - [x] Fusion checkpoint is committed through Git LFS with metadata and checksum.
 - [x] Tracked evidence and all current-facing documents match the final candidate.
 
-## External/account-bound actions
+## Publication and account-bound actions
 
-These are intentionally not performed or claimed by local repository automation:
-
-- [ ] Review and merge `ensemble-vnext` into `main`.
-- [ ] Push the branch/merge to the public remote.
-- [ ] Choose and create a public release tag.
-- [ ] Upload or verify the public GitHub release asset.
-- [ ] Confirm the real team roster and contribution statements.
+- [x] Push `ensemble-vnext` and the promoted `main` branch to the public remote.
+- [x] Create and verify the public `v2.0.0` release tag.
+- [x] Upload the checkpoint and checksum manifest as GitHub release assets.
+- [x] Set the public repository description, topics, license, CI, and security policy.
+- [ ] Confirm the real Devpost team roster and contribution statements.
 - [ ] Record/upload the demo video and add its final URL.
 - [ ] Paste/review the Devpost text and submit before the real deadline.
 - [ ] Save the official submission receipt or screenshot.

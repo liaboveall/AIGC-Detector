@@ -1,10 +1,10 @@
 # Robustness Summary — Ensemble vNext
 
-- **Status:** frozen candidate on `ensemble-vnext`
+- **Status:** frozen public release `v2.0.0`
 - **Checkpoint:** `aigc-detector-ensemble-vnext.pt`
 - **SHA-256:** `DE3C8C6E44C445278D6A47A9BC7F9E96B3CC9D02EFA675587F6329D46148587A`
 - **Model:** 0.50 Tiny vNext logit + 0.50 Base v1 logit
-**Parameters:** 115,585,507
+- **Parameters:** 115,585,507
 
 ## Protocol
 

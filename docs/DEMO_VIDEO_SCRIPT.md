@@ -105,5 +105,5 @@ corrupt file. Do not describe any single score as proof.
 - Do not claim a fresh confirmation or WildFake result for the ensemble.
 - Do not reuse Adapter v2's threshold 0.209 for the ensemble.
 - Do not claim state of the art, universal detection, or guaranteed authenticity.
-- Show `aigc-detector-ensemble-vnext.pt`, not the v1.0.0 Adapter asset, as the current
-  branch candidate.
+- Show `aigc-detector-ensemble-vnext.pt`, not the v1.0.0 Adapter asset, as the
+  `v2.0.0` release checkpoint.

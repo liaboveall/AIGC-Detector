@@ -1,8 +1,7 @@
-# Devpost Description — Ensemble vNext Draft
+# Devpost Description — Ensemble vNext
 
-This technical text matches the frozen `ensemble-vnext` branch. Team names, real
-contributions, repository/release URLs, media, and submission metadata must be supplied
-by the team owner.
+- Repository: <https://github.com/liaboveall/AIGC-Detector>
+- Release: <https://github.com/liaboveall/AIGC-Detector/releases/tag/v2.0.0>
 
 ## Inspiration
 

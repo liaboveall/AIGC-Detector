@@ -1,13 +1,13 @@
 # Ensemble vNext Evidence Bundle
 
-Verdict: **PASS — frozen repository candidate**
+Verdict: **PASS — frozen `v2.0.0` public release**
 
 This bundle contains aggregate, non-image evidence for the fixed 0.50/0.50 logit
 ensemble. It does not contain private manifests or per-image predictions.
 
 ## Candidate identity
 
-- Branch: `ensemble-vnext`
+- Release: `v2.0.0`; default branch: `main`
 - Asset: `weights/aigc-detector-ensemble-vnext.pt`
 - Bytes: 462,558,035
 - SHA-256:
@@ -90,6 +90,10 @@ rounds, 20 forwards per burst; median milliseconds per forward.
 - `latency_batch1.json`, `latency_batch32.json` — paired CUDA timings
 - `release_verify_cpu.json`, `release_verify_cuda.json` — release smoke reports
 - `checkpoint_metadata.json` — artifact and source provenance
+
+Machine-specific paths inside the JSON files are immutable provenance strings from
+the evaluation host. They are not runtime dependencies; public inference needs only
+the self-contained checkpoint.
 
 ## Evidence boundary
 

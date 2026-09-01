@@ -1,9 +1,8 @@
-# Ensemble vNext — Frozen Fusion Candidate
+# v2.0.0 — Ensemble vNext
 
 Date: 2026-09-01
 
-Status: complete on branch `ensemble-vnext`; not yet merged, tagged, pushed, or
-published as a new GitHub release.
+Status: frozen public release and default `main` checkpoint.
 
 ## Asset
 
@@ -16,6 +15,9 @@ published as a new GitHub release.
 
 The checkpoint is self-contained and tracked through Git LFS. It embeds both source
 model states, source hashes, and the blend weight.
+
+Public release:
+<https://github.com/liaboveall/AIGC-Detector/releases/tag/v2.0.0>
 
 ## Validation outcome
 
@@ -40,6 +42,13 @@ The 12,000-image historical anchor and 12,896-image source-disjoint modern devel
 set are model-selection/development evidence. The previously consumed confirmation set
 and WildFake observation were not reopened. No new sealed or official hidden-test claim
 is made, and no ensemble-specific binary threshold was calibrated.
+
+## Usage terms
+
+Repository source code is MIT licensed. The checkpoint and datasets are not relicensed
+by MIT; the checkpoint is published for research, education, reproducibility, and
+hackathon evaluation. Review `MODEL_USAGE_NOTICE.md` and upstream dataset terms before
+redistribution, deployment, commercial use, or derivative-model work.
 
 ## Verify
 

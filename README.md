@@ -1,27 +1,43 @@
-# Robust AIGC Image Detector — TikTok TechJam Track 5
+# Robust AIGC Image Detector
 
-A degradation-aware detector for continuous AI-image scoring under JPEG,
+[![CI](https://github.com/liaboveall/AIGC-Detector/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/liaboveall/AIGC-Detector/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/liaboveall/AIGC-Detector?display_name=tag)](https://github.com/liaboveall/AIGC-Detector/releases/latest)
+[![License: MIT](https://img.shields.io/badge/code%20license-MIT-blue.svg)](LICENSE)
+
+A degradation-aware AI-generated-image detector built for TikTok TechJam 2026
+Track 5. It produces a continuous AIGC score and is evaluated under JPEG,
 Gaussian blur, resizing, additive noise, color shifts, and cropping.
 
-## Current fusion candidate
+## Latest release
 
-`ensemble-vnext` is the frozen repository candidate. It blends two independently
-trained logits with fixed equal weights:
+[`v2.0.0`](https://github.com/liaboveall/AIGC-Detector/releases/tag/v2.0.0)
+freezes Ensemble vNext, a fixed equal-weight blend of two complementary models:
 
 ```text
 score = sigmoid(0.50 * Tiny-vNext-logit + 0.50 * Base-v1-logit)
 ```
 
-- Asset: `weights/aigc-detector-ensemble-vnext.pt`
+- Checkpoint: `weights/aigc-detector-ensemble-vnext.pt`
 - SHA-256: `DE3C8C6E44C445278D6A47A9BC7F9E96B3CC9D02EFA675587F6329D46148587A`
-- Parameters: 115,585,507 total, 0 trainable at inference
+- Size: 462,558,035 bytes
+- Parameters: 115,585,507 total; 0 trainable at inference
 - Input: RGB images transformed to 224 × 224
-- Output: one continuous probability in `[0, 1]`; higher means more likely AI-generated
-- Publication state: complete and verified on branch `ensemble-vnext`, not yet merged,
-  tagged, pushed, or uploaded as a new public release
+- Output: one finite score in `[0, 1]`; higher means more likely AI-generated
+- Binary threshold: none newly validated for this ensemble
 
-The published `v1.0.0` Adapter v2 asset remains the rollback release. The fusion
-branch does not change `main` or the `v1.0.0` tag.
+The checkpoint is self-contained: both member states, their source hashes, and the
+fixed blend weight are embedded in one file.
+
+```mermaid
+flowchart LR
+    I[Input image] --> T[Tiny vNext adapter]
+    I --> B[ConvNeXt Base v1]
+    T --> LT[FP32 logit × 0.50]
+    B --> LB[FP32 logit × 0.50]
+    LT --> S[Add logits]
+    LB --> S
+    S --> P[Sigmoid AIGC score]
+```
 
 ## Results
 
@@ -45,7 +61,7 @@ frozen `0.005000` limit.
 
 ### Source-disjoint modern development set
 
-The frozen alpha was then run live on 12,896 images under all 16 conditions.
+The frozen alpha was then evaluated once on 12,896 images under all 16 conditions.
 
 | Metric | Tiny vNext | Ensemble vNext | Delta |
 |---|---:|---:|---:|
@@ -55,37 +71,38 @@ The frozen alpha was then run live on 12,896 images under all 16 conditions.
 | Worst-generator robust score | 0.548970 | **0.796370** | +0.247400 |
 | Worst generator-condition AUC | 0.322516 | **0.648097** | +0.325581 |
 
-All 16 global condition AUCs improved. The 1,000-replicate content-group bootstrap
-gave a macro-gain 95% interval of `[0.171015, 0.182232]`. Complete machine-readable evidence is tracked in
+All 16 global condition AUCs improved. A 1,000-replicate content-group bootstrap
+placed the generator-macro gain 95% interval at `[0.171015, 0.182232]`. The complete
+machine-readable evidence is in
 [`reports/ensemble_vnext/`](reports/ensemble_vnext/README.md).
 
 ### Evidence boundary
 
-The historical confirmation split and WildFake were already consumed during earlier
-project stages. They were not reopened for fusion selection, calibration, threshold
-tuning, or a new sealed-performance claim. There is no newly validated binary
-threshold for the ensemble; use the continuous score unless a new target-domain
-calibration set is available.
+The historical confirmation split and WildFake were consumed during earlier project
+stages. They were not reopened for fusion selection, calibration, threshold tuning,
+or a new sealed-performance claim. Use the continuous score unless an independent,
+target-domain calibration set is available.
 
 ## Quick start
+
+Python 3.14.7 and the pinned dependencies in `requirements.txt` were used for the
+final CPU and CUDA verification.
 
 ```powershell
 git clone https://github.com/liaboveall/AIGC-Detector.git
 cd AIGC-Detector
 git lfs pull
+
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-Verify the committed LFS asset and both inference paths:
-
-```powershell
-Get-FileHash weights/aigc-detector-ensemble-vnext.pt -Algorithm SHA256
-python scripts/verify_ensemble_release.py --device cuda
-python scripts/verify_ensemble_release.py --device cpu
-```
+On macOS or Linux, activate the environment with `source .venv/bin/activate`. If Git
+LFS is unavailable, download the checkpoint directly from the
+[`v2.0.0` release](https://github.com/liaboveall/AIGC-Detector/releases/tag/v2.0.0)
+and place it under `weights/`.
 
 Run recursive directory inference:
 
@@ -93,7 +110,8 @@ Run recursive directory inference:
 python predict.py --input-dir path/to/images --output predictions.json
 ```
 
-The output contract is:
+Use `--device cpu`, `--device cuda`, or `--device cuda:0` to override automatic
+device selection. The output contract is exactly:
 
 ```json
 [
@@ -101,19 +119,29 @@ The output contract is:
 ]
 ```
 
-Unreadable supported files receive the neutral score `0.5`. Override the checkpoint
-with `--checkpoint PATH` or the device with `--device cpu` / `--device cuda:0`.
+Unreadable supported files receive the neutral score `0.5` instead of terminating
+the batch. Scores are model estimates, not authenticity certificates.
 
-## Verification and reproduction
+## Verify the release
 
 ```powershell
+Get-FileHash weights/aigc-detector-ensemble-vnext.pt -Algorithm SHA256
 python test.py
-python -m compileall -q src scripts train.py train_adapter.py evaluate.py predict.py
+python scripts/verify_ensemble_release.py --device cpu
+python scripts/verify_ensemble_release.py --device cuda
+python -m compileall -q src scripts train.py train_adapter.py `
+  train_base_v3.py train_repair_adapter.py train_replay_distill.py `
+  evaluate.py predict.py test.py
 python -m pip check
-git diff --check
 ```
 
-Repackage the fusion from the two hash-pinned source checkpoints:
+The release verifier checks the artifact digest, fixed alpha, source hashes, parameter
+count, frozen parameters, deterministic repeated inference, exact JSON keys, finite
+scores, unreadable-image fallback, and CPU/CUDA execution.
+
+## Reproduce the package
+
+The release file can be rebuilt from the two hash-pinned source checkpoints:
 
 ```powershell
 python scripts/package_ensemble_checkpoint.py `
@@ -123,36 +151,51 @@ python scripts/package_ensemble_checkpoint.py `
   --output weights/aigc-detector-ensemble-vnext.pt
 ```
 
-The source checkpoint hashes and protocol are frozen in
-[`docs/ENSEMBLE_VNEXT.md`](docs/ENSEMBLE_VNEXT.md). Dataset reconstruction requires
-the private image trees and manifests described in
-[`Dataset/README_DATASET.md`](Dataset/README_DATASET.md).
+The source checkpoints are not redistributed separately. Training and full benchmark
+reproduction require the upstream datasets and local manifests described in
+[`Dataset/README_DATASET.md`](Dataset/README_DATASET.md). Dataset image bodies and
+private per-image predictions are intentionally excluded from Git.
 
-## Data governance and limitations
+## Limitations and responsible use
 
-- Dataset image bodies and private manifests are not redistributed.
-- CommunityForensics-Small is recorded as CC-BY-NC-SA-4.0. SID_Set, GenImage, COCO,
-  CIFAKE, and WildFake remain subject to their upstream terms.
-- Strong noise is the weakest global modern condition; the weakest generator-condition
-  pair is Midjourney v1/v2 under `noise_0.05`.
-- On an RTX 4080 Laptop GPU, paired median latency is 13.87 ms/image at batch 1 and
-  92.88 ms/batch at batch 32 (2.77× and 3.37× Tiny vNext latency, respectively).
-- Scores can reflect content, codec, camera, and semantic shortcuts. They are not proof
-  of authorship, fraud, or misconduct.
-- Use human review and target-domain validation for consequential decisions.
+- Strong additive noise is the weakest global modern condition.
+- Midjourney v1/v2 under `noise_0.05` is the weakest evaluated generator-condition
+  pair; Midjourney v6 has the lowest generator-level robust score.
+- The two-network ensemble increases latency, memory demand, and artifact size.
+- Paired RTX 4080 Laptop measurements: 13.87 ms/image at batch 1 and 92.88 ms/batch
+  at batch 32, 2.77× and 3.37× Tiny vNext latency respectively.
+- Scores can reflect content, codec, camera, and semantic shortcuts and can fail on
+  unseen generators, editing pipelines, regions, or content categories.
+- Do not use the score as proof of authorship, fraud, or misconduct. Consequential
+  decisions require human review and independent target-domain validation.
 - No state-of-the-art, universal-generator, leaderboard, or competition-winning claim
-  is made without a new official hidden evaluation.
+  is made without an official hidden evaluation.
 
-## Project map
+## Repository guide
 
-- [`MODEL_CARD.md`](MODEL_CARD.md) — current architecture, uses, risks, and evidence
-- [`docs/ROBUSTNESS_SUMMARY.md`](docs/ROBUSTNESS_SUMMARY.md) — validation breakdown
-- [`docs/ERROR_ANALYSIS.md`](docs/ERROR_ANALYSIS.md) — current failure analysis
-- [`docs/DELIVERY_CHECKLIST.md`](docs/DELIVERY_CHECKLIST.md) — verified and external gates
-- [`reports/ensemble_vnext/`](reports/ensemble_vnext/README.md) — tracked fusion evidence
-- [`docs/TINY_VNEXT_RESULTS.md`](docs/TINY_VNEXT_RESULTS.md) — accepted Tiny member lineage
-- [`reports/base_v1_primary.md`](reports/base_v1_primary.md) — selected Base member evidence
-- [`reports/base_v3_outcome.md`](reports/base_v3_outcome.md) — rejected Base restart evidence
-- [`reports/final_adapter_v2/`](reports/final_adapter_v2/README.md) — historical v1.0.0 evidence
-- `predict.py` — directory-to-JSON inference entry point
-- `evaluate.py` — deterministic robustness evaluation entry point
+| Path | Purpose |
+|---|---|
+| [`predict.py`](predict.py) | Recursive directory-to-JSON inference |
+| [`evaluate.py`](evaluate.py) | Deterministic robustness evaluation |
+| [`MODEL_CARD.md`](MODEL_CARD.md) | Architecture, intended use, evidence, and risks |
+| [`docs/ROBUSTNESS_SUMMARY.md`](docs/ROBUSTNESS_SUMMARY.md) | Validation protocol and result tables |
+| [`docs/ERROR_ANALYSIS.md`](docs/ERROR_ANALYSIS.md) | Remaining failure modes and interpretation limits |
+| [`docs/ENSEMBLE_VNEXT.md`](docs/ENSEMBLE_VNEXT.md) | Frozen fusion decision protocol |
+| [`docs/DELIVERY_CHECKLIST.md`](docs/DELIVERY_CHECKLIST.md) | Repository and external submission gates |
+| [`docs/DEVPOST_DESCRIPTION.md`](docs/DEVPOST_DESCRIPTION.md) | Submission-ready technical narrative |
+| [`docs/DEMO_VIDEO_SCRIPT.md`](docs/DEMO_VIDEO_SCRIPT.md) | Three-minute demo plan and claim guardrails |
+| [`reports/ensemble_vnext/`](reports/ensemble_vnext/README.md) | Aggregate machine-readable evidence |
+| [`weights/`](weights/README.md) | Checkpoint, checksums, and download guidance |
+
+Historical accepted and rejected development lines remain documented under
+`docs/` and `reports/`; the default inference path always uses the v2.0.0 ensemble.
+
+## License and maintenance
+
+The repository source code is available under the [MIT License](LICENSE). Model
+weights, datasets, and third-party materials are not relicensed by MIT; review
+[`MODEL_USAGE_NOTICE.md`](MODEL_USAGE_NOTICE.md) and all upstream terms before use.
+
+- Maintainer: [Li Jiaxing (`@liaboveall`)](https://github.com/liaboveall)
+- Contributions: see [`CONTRIBUTING.md`](CONTRIBUTING.md)
+- Security reports: see [`SECURITY.md`](SECURITY.md)

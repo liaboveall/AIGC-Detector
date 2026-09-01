@@ -2,7 +2,8 @@
 
 ## Model details
 
-- Status: frozen candidate on branch `ensemble-vnext`
+- Status: frozen public release `v2.0.0`
+- Release: <https://github.com/liaboveall/AIGC-Detector/releases/tag/v2.0.0>
 - Asset: `aigc-detector-ensemble-vnext.pt`
 - SHA-256: `DE3C8C6E44C445278D6A47A9BC7F9E96B3CC9D02EFA675587F6329D46148587A`
 - Architecture: fixed 0.50/0.50 logit blend of:
@@ -90,7 +91,8 @@ Outputs are uncertain model scores, not factual authenticity certificates.
 
 ## Reproducibility
 
-The LFS checkpoint is hash-pinned in `weights/SHA256SUMS.txt`. Run:
+The checkpoint is distributed through Git LFS and the `v2.0.0` GitHub release, and is
+hash-pinned in `weights/SHA256SUMS.txt`. Run:
 
 ```powershell
 git lfs pull
