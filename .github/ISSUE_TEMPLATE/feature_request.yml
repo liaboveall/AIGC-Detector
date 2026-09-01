@@ -1,0 +1,35 @@
+name: Feature request
+description: Propose a scoped improvement to the detector or repository.
+title: "[Feature]: "
+labels: []
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What limitation or workflow problem should be addressed?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Describe the behavior, evidence, and compatibility implications.
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation plan
+      description: Explain how the change can be tested without reopening consumed data.
+    validations:
+      required: true
+  - type: checkboxes
+    id: boundaries
+    attributes:
+      label: Evidence boundaries
+      options:
+        - label: This proposal does not require tuning on consumed confirmation or WildFake data.
+          required: true
+        - label: I will document any new dataset or checkpoint licensing requirements.
+          required: true

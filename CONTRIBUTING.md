@@ -3,6 +3,8 @@
 Thanks for helping improve AIGC-Detector. Changes should preserve the repository's
 evidence boundaries and keep inference reproducible.
 
+Participation is governed by the [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
+
 ## Development setup
 
 ```powershell
