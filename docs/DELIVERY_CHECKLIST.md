@@ -49,10 +49,10 @@ on the recorded evidence belongs in this release.
 - [x] Create and verify the public `v2.0.0` release tag.
 - [x] Upload the checkpoint and checksum manifest as GitHub release assets.
 - [x] Set the public repository description, topics, license, CI, and security policy.
-- [ ] Confirm the real Devpost team roster and contribution statements.
-- [ ] Record/upload the demo video and add its final URL.
-- [ ] Paste/review the Devpost text and submit before the real deadline.
-- [ ] Save the official submission receipt or screenshot.
+- [x] Confirm the real Devpost team roster and contribution statements.
+- [x] Record/upload the demo video and add its final URL.
+- [x] Paste/review the Devpost text and submit before the real deadline.
+- [x] Save the official submission receipt or screenshot.
 
 ## Final verification commands
 

@@ -35,6 +35,9 @@ reports/compression_history_audit/diagnostic_sample_manifest.csv
 
 # Generated demo output (created at repo root by README / demo script commands)
 predictions.json
+demo_predictions.json
+demo_images/
+demo_visuals/
 
 # Archives only ever live in data staging caches; keep deliverable exceptions open.
 Dataset/_archives/
