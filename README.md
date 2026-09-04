@@ -181,9 +181,6 @@ private per-image predictions are intentionally excluded from Git.
 | [`docs/ROBUSTNESS_SUMMARY.md`](docs/ROBUSTNESS_SUMMARY.md) | Validation protocol and result tables |
 | [`docs/ERROR_ANALYSIS.md`](docs/ERROR_ANALYSIS.md) | Remaining failure modes and interpretation limits |
 | [`docs/ENSEMBLE_VNEXT.md`](docs/ENSEMBLE_VNEXT.md) | Frozen fusion decision protocol |
-| [`docs/DELIVERY_CHECKLIST.md`](docs/DELIVERY_CHECKLIST.md) | Repository and external submission gates |
-| [`docs/DEVPOST_DESCRIPTION.md`](docs/DEVPOST_DESCRIPTION.md) | Submission-ready technical narrative |
-| [`docs/DEMO_VIDEO_SCRIPT.md`](docs/DEMO_VIDEO_SCRIPT.md) | Three-minute demo plan and claim guardrails |
 | [`reports/ensemble_vnext/`](reports/ensemble_vnext/README.md) | Aggregate machine-readable evidence |
 | [`weights/`](weights/README.md) | Checkpoint, checksums, and download guidance |
 
