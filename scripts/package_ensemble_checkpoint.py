@@ -27,6 +27,21 @@ from pathlib import Path
 import torch
 
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+
+def provenance_path(path: Path) -> str:
+    """Record a path relative to the project root (bare file name outside it).
+
+    Machine-specific absolute paths would make the packaged bytes, and therefore the
+    published SHA-256, depend on where the repository happened to be checked out.
+    """
+    try:
+        return path.relative_to(PROJECT_ROOT).as_posix()
+    except ValueError:
+        return path.name
+
+
 def sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -83,6 +98,8 @@ def main() -> None:
 
     sha_a = sha256(source_a)
     sha_b = sha256(source_b)
+    label_a = provenance_path(source_a)
+    label_b = provenance_path(source_b)
     parameters_a = state_parameter_count(checkpoint_a["model_state"])
     parameters_b = state_parameter_count(checkpoint_b["model_state"])
     packaged_config = {
@@ -94,12 +111,12 @@ def main() -> None:
             "alpha": float(args.alpha),
             "model_a": {
                 "config": config_a,
-                "source_checkpoint": str(source_a),
+                "source_checkpoint": label_a,
                 "source_sha256": sha_a,
             },
             "model_b": {
                 "config": config_b,
-                "source_checkpoint": str(source_b),
+                "source_checkpoint": label_b,
                 "source_sha256": sha_b,
             },
         },
@@ -113,10 +130,10 @@ def main() -> None:
         "delivery": {
             "kind": "fixed_weight_logit_ensemble",
             "alpha": float(args.alpha),
-            "model_a_source": str(source_a),
+            "model_a_source": label_a,
             "model_a_sha256": sha_a,
             "model_a_parameters": parameters_a,
-            "model_b_source": str(source_b),
+            "model_b_source": label_b,
             "model_b_sha256": sha_b,
             "model_b_parameters": parameters_b,
             "total_parameters": parameters_a + parameters_b,
@@ -126,7 +143,7 @@ def main() -> None:
     destination.parent.mkdir(parents=True, exist_ok=True)
     torch.save(packaged, destination)
     metadata = {
-        "checkpoint": str(destination),
+        "checkpoint": provenance_path(destination),
         "sha256": sha256(destination),
         **packaged["delivery"],
     }

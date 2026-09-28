@@ -43,6 +43,14 @@ def resolve(value: str) -> Path:
     return path if path.is_absolute() else PROJECT_ROOT / path
 
 
+def display_path(path: Path) -> str:
+    """Project-relative path for reports, so evidence JSON is machine-independent."""
+    try:
+        return path.relative_to(PROJECT_ROOT).as_posix()
+    except ValueError:
+        return path.name
+
+
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -144,7 +152,7 @@ def main() -> None:
 
     result = {
         "status": "PASS",
-        "checkpoint": str(checkpoint_path),
+        "checkpoint": display_path(checkpoint_path),
         "sha256": actual_sha256,
         "device": args.device,
         "alpha": alpha,
