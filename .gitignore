@@ -17,10 +17,11 @@ outputs/
 *.log
 
 # Datasets: image bodies and manifest CSVs (all >1 MB) must never be committed.
-# Only Dataset/README_DATASET.md and the manifest rebuild script are tracked;
-# the seed manifests are regenerated with the commands documented in the README.
+# Only the dataset documentation (README_DATASET.md, REBUILD.md) and the manifest
+# rebuild script are tracked; manifests are regenerated as described in REBUILD.md.
 Dataset/*
 !Dataset/README_DATASET.md
+!Dataset/REBUILD.md
 !Dataset/audit/
 Dataset/audit/*
 !Dataset/audit/build_dataset_manifests.py

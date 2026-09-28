@@ -103,5 +103,5 @@ python scripts/verify_ensemble_release.py --device cpu
 
 The exact alpha-selection and evidence protocol is in
 [`docs/ENSEMBLE_VNEXT.md`](docs/ENSEMBLE_VNEXT.md). Training reproduction requires
-the upstream datasets and private manifests documented in
-`Dataset/README_DATASET.md`.
+the upstream datasets and private manifests; see
+[`Dataset/REBUILD.md`](Dataset/REBUILD.md).

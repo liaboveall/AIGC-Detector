@@ -1,8 +1,8 @@
 # Dataset layout
 
-This directory was organized on 2026-08-26. The original SID/WildFake archives were
-removed after verified extraction to reclaim disk space; extracted image trees are
-preserved.
+Image bodies and manifest CSVs are not tracked in Git. [REBUILD.md](REBUILD.md) explains
+how to recreate this directory from upstream sources; the layout, policies, and counts
+below describe a complete rebuild.
 
 ## Directories
 
@@ -37,14 +37,18 @@ preserved.
 - `training_modern_generators.csv` is retained as a full-retraining option, but is not
   the default fine-tuning input because the historical sources retain a strong
   label/codec association.
+- `replay_balanced_560000.csv` is the historical Adapter v2 replay manifest: 280,000
+  CommunityForensics-Small, 140,000 GenImage, and 140,000 SID_Set rows, each source
+  balanced 1:1 by binary label. Aggregate facts are tracked in
+  [`../reports/final_adapter_v2/dataset_summary.json`](../reports/final_adapter_v2/dataset_summary.json).
 - `susy_vnext_{train,dev}.csv` and `cocoai_vnext_{train,dev}.csv` are exact-hash and
   content-group audited modern-source manifests.
 - `tiny_vnext_train_balanced_280000.csv` is the source/label-balanced training manifest
   embedded in both Ensemble vNext member configs: CommunityForensics 40%, GenImage
   20%, SID_Set 20%, and modern SuSy/MS-COCOAI 20%.
-- `tiny_vnext_modern_dev.csv` contains 12,896 source-disjoint development images across
-  eight fake-generator strata. It is development/model-selection data, not a sealed
-  confirmation set.
+- `tiny_vnext_modern_dev.csv` contains 12,896 development images from the SuSy and
+  MS-COCOAI validation splits, across eight fake-generator strata. It is
+  development/model-selection data, not a sealed confirmation set.
 
 SID labels are preserved as `real=0`, `full_synthetic=1`, `tampered=2`. The derived
 binary label is `real=0` and both generated/tampered classes are `1`. Tampered masks
@@ -70,71 +74,26 @@ are referenced through `mask_path` and are not treated as classifier input image
 - Tiny vNext modern development manifest: 12,896 rows (1,234 shared real references and
   11,662 fake images across eight generator strata).
 
-All nine ZIP archives passed a complete `7z t` integrity check before extraction.
-See `audit/extraction_counts.json` and `audit/duplicate_groups.csv` for details.
+In the original build, all nine ZIP archives (seven SID_Set, two WildFake) passed a
+complete `7z t` integrity check before extraction. `audit/build_dataset_manifests.py`
+records the details in `audit/extraction_counts.json` and `audit/duplicate_groups.csv`.
 
 ## Rebuild
 
-Run the following from the repository root after the extracted directory layout is
-present:
+[REBUILD.md](REBUILD.md) covers the sources and pinned revisions, the required step
+order, expected counts, the disk and time budget, and how to verify a rebuild against
+the tracked evaluation reports.
 
-```powershell
-python Dataset/audit/build_dataset_manifests.py
-```
-
-The script rebuilds manifests and audit tables without changing image files.
-
-Modern-generator manifests are rebuilt deterministically with:
-
-```powershell
-python scripts/build_modern_generator_manifests.py
-```
-
-Tiny vNext modern data uses separately pinned download, preparation, and combination
-steps. The SuSy sealed test archive is not downloaded by default and must not be opened
-for development:
-
-```powershell
-python scripts/download_susy_vnext.py --splits train val
-python scripts/prepare_susy_vnext.py --splits train val
-python scripts/download_cocoai_vnext.py
-python scripts/prepare_cocoai_vnext.py
-python scripts/build_tiny_vnext_manifests.py --total-train 280000 --seed 2026
-```
-
-Pinned sources:
-
-- [SuSy](https://huggingface.co/datasets/aminasifar1/SuSy-Dataset):
-  `aminasifar1/SuSy-Dataset` at
-  `df5f324e4438cddaaf0de87f231c356b47aa555d`.
-- [MS-COCOAI/Defactify](https://huggingface.co/datasets/Rajarshi-Roy-research/Defactify_Image_Dataset):
-  `Rajarshi-Roy-research/Defactify_Image_Dataset` at
-  `787334f7857fa54f29027a7f09c30e895ad486ef`.
-- [CommunityForensics-Small](https://huggingface.co/datasets/OwensLab/CommunityForensics-Small)
-  at `6c539a534c07917307c381f5af4053c6091b5278`.
-- [GenImage Arrow export](https://huggingface.co/datasets/nebula/GenImage-arrow)
-  at `3f4b9f921a673be09a93b335ed728cea0c6ecf33`; review the
-  [GenImage license](https://github.com/GenImage-Dataset/GenImage/blob/main/License)
-  before download or use.
-
-Download receipts and preparation summaries live inside each local dataset directory.
-MS-COCOAI's dataset card did not declare a license at the pinned revision; it was
-included by explicit project decision and must be reviewed before redistribution or
-commercial use.
-
-The pinned CommunityForensics source revision, CC-BY-NC-SA-4.0 license reference,
-exclusion accounting, and leakage checks are recorded in
-`audit/communityforensics_small_download_report.json` and
-`audit/modern_generator_manifest_report.json`.
-
-The historical Adapter v2 replay manifest contains 560,000 rows: 280,000
-CommunityForensics-Small, 140,000 GenImage, and 140,000 SID_Set, with each source
-balanced 1:1 by binary label. Aggregate non-sensitive facts are tracked publicly in
-`../reports/final_adapter_v2/dataset_summary.json`; large manifests and image bodies
-remain local.
+- Each download writes a receipt, and each preparation step writes a summary, inside
+  its local dataset directory.
+- The CommunityForensics revision, license reference, exclusion accounting, and
+  leakage checks are written to `audit/communityforensics_small_download_report.json`
+  and `audit/modern_generator_manifest_report.json`.
+- MS-COCOAI's dataset card declares no license at the pinned revision; review it before
+  redistribution or commercial use.
 
 ## Repository tracking policy
 
-Only documentation and deterministic acquisition/preparation/build scripts are
-committed. Large manifest CSVs and image bodies remain local; see the main README's
-*Verification and reproduction* section for the command chain.
+Only this README, [REBUILD.md](REBUILD.md), and `audit/build_dataset_manifests.py` are
+tracked in this directory; acquisition, preparation, and build scripts live in
+`../scripts/`. Large manifest CSVs and image bodies remain local.

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Documentation
+
+- Add `Dataset/REBUILD.md`: sources, pinned revisions, step order, expected counts,
+  disk budget, and a metric fingerprint for verifying a dataset rebuild.
+
 ### Tooling
 
 - Record project-relative source paths in packaged checkpoints, their metadata
