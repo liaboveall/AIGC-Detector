@@ -10,6 +10,17 @@ from pathlib import Path
 import torch
 
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+
+def provenance_path(path: Path) -> str:
+    """Record a path relative to the project root (bare file name outside it)."""
+    try:
+        return path.relative_to(PROJECT_ROOT).as_posix()
+    except ValueError:
+        return path.name
+
+
 def sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -43,7 +54,7 @@ def main() -> None:
         raise ValueError("Input checkpoint is not adapter-enabled")
     adapter["residual_gain"] = float(args.residual_gain)
     packaged["delivery"] = {
-        "source_checkpoint": str(source),
+        "source_checkpoint": provenance_path(source),
         "source_sha256": sha256(source),
         "fixed_residual_gain": float(args.residual_gain),
     }
@@ -51,7 +62,7 @@ def main() -> None:
     destination.parent.mkdir(parents=True, exist_ok=True)
     torch.save(packaged, destination)
     metadata = {
-        "checkpoint": str(destination),
+        "checkpoint": provenance_path(destination),
         "sha256": sha256(destination),
         **packaged["delivery"],
     }

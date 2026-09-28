@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Tooling
+
+- Record project-relative source paths in packaged checkpoints, their metadata
+  sidecars, and release-verification reports. Rebuilding a package from the same
+  sources now reproduces its published SHA-256.
+
 ## v2.0.0 — 2026-09-01
 
 Promote Ensemble vNext to the public default release.
