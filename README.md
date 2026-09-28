@@ -153,9 +153,10 @@ python scripts/package_ensemble_checkpoint.py `
 ```
 
 The source checkpoints are not redistributed separately. Training and full benchmark
-reproduction require the upstream datasets and local manifests described in
-[`Dataset/README_DATASET.md`](Dataset/README_DATASET.md). Dataset image bodies and
-private per-image predictions are intentionally excluded from Git.
+reproduction require the upstream datasets and local manifests: follow
+[`Dataset/REBUILD.md`](Dataset/REBUILD.md) to rebuild them, and see
+[`Dataset/README_DATASET.md`](Dataset/README_DATASET.md) for the layout. Dataset image
+bodies and private per-image predictions are intentionally excluded from Git.
 
 ## Limitations and responsible use
 
@@ -184,6 +185,7 @@ private per-image predictions are intentionally excluded from Git.
 | [`docs/ENSEMBLE_VNEXT.md`](docs/ENSEMBLE_VNEXT.md) | Frozen fusion decision protocol |
 | [`reports/ensemble_vnext/`](reports/ensemble_vnext/README.md) | Aggregate machine-readable evidence |
 | [`weights/`](weights/README.md) | Checkpoint, checksums, and download guidance |
+| [`Dataset/REBUILD.md`](Dataset/REBUILD.md) | Rebuilding the datasets from upstream sources |
 
 Historical accepted and rejected development lines remain documented under
 `docs/` and `reports/`; the default inference path always uses the v2.0.0 ensemble.
